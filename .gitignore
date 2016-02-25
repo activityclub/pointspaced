@@ -1,0 +1,4 @@
+*.swp
+pointspaced
+vendor
+conf/settings.toml

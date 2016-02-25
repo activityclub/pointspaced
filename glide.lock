@@ -1,0 +1,45 @@
+hash: ba1288c75f211fd34955964b4681a4adf42f4071d412a5328b60fdf4395f01c0
+updated: 2016-02-24T23:32:36.866278477-08:00
+imports:
+- name: github.com/BurntSushi/toml
+  version: a4eecd407cf4129fc902ece859a0114e4cf1a7f4
+  vcs: git
+- name: github.com/codegangsta/cli
+  version: 5db74198dee1cfe60cf06a611d03a420361baad6
+  vcs: git
+- name: github.com/davecgh/go-spew
+  version: 5215b55f46b2b919f50a1df0eaa5886afe4e3b3d
+  subpackages:
+  - spew
+- name: github.com/gin-gonic/gin
+  version: 00b10c30a00cdba00ba288154052b9e29ec4d0bf
+  vcs: git
+- name: github.com/golang/protobuf
+  version: 2402d76f3d41f928c7902a765dfc872356dd3aad
+  subpackages:
+  - proto
+- name: github.com/manucorporat/sse
+  version: ee05b128a739a0fb76c7ebd3ae4810c1de808d6d
+- name: github.com/pmezard/go-difflib
+  version: 792786c7400a136282c1664665ae0a8db921c6c2
+  subpackages:
+  - difflib
+- name: github.com/stretchr/objx
+  version: cbeaeb16a013161a98496fad62933b1d21786672
+- name: github.com/stretchr/testify
+  version: f390dcf405f7b83c997eac1b06768bb9f44dec18
+  subpackages:
+  - assert
+- name: golang.org/x/crypto
+  version: 1f22c0103821b9390939b6776727195525381532
+  repo: https://golang.org/x/crypto
+- name: golang.org/x/net
+  version: f315505cf3349909cdf013ea56690da34e96a451
+  subpackages:
+  - context
+- name: golang.org/x/text
+  version: 07b9a78963006a15c538ec5175243979025fa7a8
+  repo: https://golang.org/x/text
+- name: gopkg.in/go-playground/validator.v8
+  version: c193cecd124b5cc722d7ee5538e945bdb3348435
+devImports: []

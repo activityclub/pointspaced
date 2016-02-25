@@ -1,0 +1,16 @@
+
+# pointspaced config
+
+
+[HttpConfig]
+
+bind="127.0.0.1:1155"
+
+
+[NSQConfig]
+
+nsqlookupds = ["localhost:4151"]
+
+
+
+

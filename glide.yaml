@@ -1,0 +1,11 @@
+package: pointspaced
+import: 
+- package: github.com/codegangsta/cli
+  version: 5db74198dee1cfe60cf06a611d03a420361baad6
+  vcs: git
+- package: github.com/BurntSushi/toml
+  version: a4eecd407cf4129fc902ece859a0114e4cf1a7f4
+  vcs: git
+- package: github.com/gin-gonic/gin
+  version: 00b10c30a00cdba00ba288154052b9e29ec4d0bf
+  vcs: git
