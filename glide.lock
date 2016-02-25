@@ -1,6 +1,9 @@
-hash: ba1288c75f211fd34955964b4681a4adf42f4071d412a5328b60fdf4395f01c0
-updated: 2016-02-24T23:32:36.866278477-08:00
+hash: 1ee85ae2cfa94726ba2c042791f4fe90c411a6b00958d24aadc5477952667e1c
+updated: 2016-02-24T23:55:38.921942401-08:00
 imports:
+- name: github.com/bitly/go-nsq
+  version: 0b80d6f05e15ca1930e0c5e1d540ed627e299980
+  vcs: git
 - name: github.com/BurntSushi/toml
   version: a4eecd407cf4129fc902ece859a0114e4cf1a7f4
   vcs: git
@@ -20,6 +23,9 @@ imports:
   - proto
 - name: github.com/manucorporat/sse
   version: ee05b128a739a0fb76c7ebd3ae4810c1de808d6d
+- name: github.com/mreiferson/go-snappystream
+  version: 028eae7ab5c4c9e2d1cb4c4ca1e53259bbe7e504
+  repo: https://github.com/mreiferson/go-snappystream
 - name: github.com/pmezard/go-difflib
   version: 792786c7400a136282c1664665ae0a8db921c6c2
   subpackages:
@@ -32,14 +38,12 @@ imports:
   - assert
 - name: golang.org/x/crypto
   version: 1f22c0103821b9390939b6776727195525381532
-  repo: https://golang.org/x/crypto
 - name: golang.org/x/net
   version: f315505cf3349909cdf013ea56690da34e96a451
   subpackages:
   - context
 - name: golang.org/x/text
   version: 07b9a78963006a15c538ec5175243979025fa7a8
-  repo: https://golang.org/x/text
 - name: gopkg.in/go-playground/validator.v8
   version: c193cecd124b5cc722d7ee5538e945bdb3348435
 devImports: []

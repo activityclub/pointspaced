@@ -5,6 +5,7 @@ import "github.com/codegangsta/cli"
 import "fmt"
 import "pointspaced/psdcontext"
 import "pointspaced/server"
+import "pointspaced/worker"
 
 func main() {
 	app := cli.NewApp()
@@ -39,6 +40,7 @@ func main() {
 				cfg_file := c.GlobalString("config")
 				psdcontext.PrepareContext(cfg_file)
 				fmt.Println("-> PSD, starting worker with nsqlookupds: ", psdcontext.Ctx.Config.NSQConfig.NSQLookupds)
+				worker.Run()
 			},
 		},
 	}

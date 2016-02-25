@@ -9,3 +9,6 @@ import:
 - package: github.com/gin-gonic/gin
   version: 00b10c30a00cdba00ba288154052b9e29ec4d0bf
   vcs: git
+- package: github.com/bitly/go-nsq
+  version: 0b80d6f05e15ca1930e0c5e1d540ed627e299980 
+  vcs: git
