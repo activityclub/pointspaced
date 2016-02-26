@@ -8,7 +8,8 @@ class NSQPublisher
      path = "/pub?topic=#{topic}"
      req = Net::HTTP::Post.new(path, initheader = {'Content-Type' =>'application/json'})
      req.body = payload
-     http = Net::HTTP.new("10.18.1.4", 4151)
+#     http = Net::HTTP.new("10.18.1.4", 4151)
+     http = Net::HTTP.new("127.0.0.1", 4151)
      http.read_timeout = 5
      http.open_timeout = 5
      http.start { |http|
