@@ -1,5 +1,5 @@
 hash: 1ee85ae2cfa94726ba2c042791f4fe90c411a6b00958d24aadc5477952667e1c
-updated: 2016-02-24T23:55:38.921942401-08:00
+updated: 2016-02-29T11:35:05.687172649-08:00
 imports:
 - name: github.com/bitly/go-nsq
   version: 0b80d6f05e15ca1930e0c5e1d540ed627e299980
@@ -25,7 +25,6 @@ imports:
   version: ee05b128a739a0fb76c7ebd3ae4810c1de808d6d
 - name: github.com/mreiferson/go-snappystream
   version: 028eae7ab5c4c9e2d1cb4c4ca1e53259bbe7e504
-  repo: https://github.com/mreiferson/go-snappystream
 - name: github.com/pmezard/go-difflib
   version: 792786c7400a136282c1664665ae0a8db921c6c2
   subpackages:
