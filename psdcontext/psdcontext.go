@@ -3,6 +3,7 @@ package psdcontext
 import "log"
 import "os"
 import "github.com/BurntSushi/toml"
+import "github.com/garyburd/redigo/redis"
 
 type HttpConfig struct {
 	Bind string
@@ -18,7 +19,8 @@ type Config struct {
 }
 
 type Context struct {
-	Config Config
+	Config    Config
+	RedisPool *redis.Pool
 }
 
 var Ctx Context

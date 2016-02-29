@@ -6,6 +6,7 @@ import "fmt"
 import "pointspaced/psdcontext"
 import "pointspaced/server"
 import "pointspaced/worker"
+import "pointspaced/persistence"
 
 func main() {
 	app := cli.NewApp()
@@ -39,6 +40,7 @@ func main() {
 			Action: func(c *cli.Context) {
 				cfg_file := c.GlobalString("config")
 				psdcontext.PrepareContext(cfg_file)
+				psdcontext.Ctx.RedisPool = persistence.NewRedisPool(":6379")
 				fmt.Println("-> PSD, starting worker with nsqlookupds: ", psdcontext.Ctx.Config.NSQConfig.NSQLookupds)
 				worker.Run()
 			},

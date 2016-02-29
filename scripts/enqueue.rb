@@ -21,10 +21,11 @@ end
 payload = {
   :command => "metric",
   :metric => {
-   :steps => 10,
+   :steps => 11,
+   :points => 3,
    :activity_type_id => 3,
-   :start_ts => Time.now.to_i,
-   :end_ts => Time.now.to_i
+   :timestamp => Time.now.to_i,
+   :user_id => 1
   }
 }
 
