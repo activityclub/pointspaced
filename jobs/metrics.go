@@ -14,13 +14,22 @@ type MetricJob struct {
 	Timestamp        int64 `json:"timestamp"`
 }
 
-type MectricWriter interface {
-	WritePoint(flavor string, userId int64, value int64, timestamp int64)
+type MetricWriter interface {
+	WritePoint(flavor string, userId int64, value int64, activityTypeId int64, timestamp int64)
+}
+
+type FooBar struct {
+	MetricWriter
 }
 
 func ProcessMetricJob(metric MetricJob) {
 	fmt.Println("-> [MetricJob] Processing Job, STEPS=", metric.Steps)
 	fmt.Println("\tTs=", metric.Timestamp)
-	persistence.WritePoint("steps", metric.UserId, metric.Steps, metric.ActivityTypeId, metric.Timestamp)
-	persistence.WritePoint("points", metric.UserId, metric.Points, metric.ActivityTypeId, metric.Timestamp)
+
+	fb := FooBar{}
+	//fb.MetricWriter = persistence.RedisWriter{}
+	fb.MetricWriter = persistence.RedisTs{}
+
+	fb.MetricWriter.WritePoint("steps", metric.UserId, metric.Steps, metric.ActivityTypeId, metric.Timestamp)
+	fb.MetricWriter.WritePoint("points", metric.UserId, metric.Points, metric.ActivityTypeId, metric.Timestamp)
 }

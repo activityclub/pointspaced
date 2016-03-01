@@ -7,6 +7,7 @@ import "errors"
 import "github.com/garyburd/redigo/redis"
 import "pointspaced/psdcontext"
 
+// MOVE ME LATER
 func NewRedisPool(server string) *redis.Pool {
 	return &redis.Pool{
 		MaxIdle:     3,
@@ -25,7 +26,11 @@ func NewRedisPool(server string) *redis.Pool {
 	}
 }
 
-func WritePoint(flavor string, userId int64, value int64, activityTypeId int64, timestamp int64) {
+//////////
+
+type RedisWriter struct{}
+
+func (self RedisWriter) WritePoint(flavor string, userId int64, value int64, activityTypeId int64, timestamp int64) {
 
 	if (value == 0) ||
 		(userId == 0) ||
@@ -38,7 +43,7 @@ func WritePoint(flavor string, userId int64, value int64, activityTypeId int64, 
 		return
 	}
 
-	buckets, err := bucketsForJob(timestamp)
+	buckets, err := self.bucketsForJob(timestamp)
 
 	r := psdcontext.Ctx.RedisPool.Get()
 
@@ -83,7 +88,7 @@ func WritePoint(flavor string, userId int64, value int64, activityTypeId int64, 
 
 }
 
-func bucketsForJob(ts int64) ([]string, error) {
+func (self *RedisWriter) bucketsForJob(ts int64) ([]string, error) {
 
 	out := []string{}
 

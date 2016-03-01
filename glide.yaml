@@ -12,3 +12,11 @@ import:
 - package: github.com/bitly/go-nsq
   version: 0b80d6f05e15ca1930e0c5e1d540ed627e299980 
   vcs: git
+- package: github.com/garyburd/redigo/redis 
+  version: 55d64223b60ff7c6a7f1c391f611038a88a86b01
+  vcs: git
+- package: github.com/mreiferson/go-snappystream
+  version: 028eae7ab5c4c9e2d1cb4c4ca1e53259bbe7e504
+  vcs: git
+- package: github.com/donnpebe/go-redis-timeseries
+- package: github.com/alecthomas/binary
