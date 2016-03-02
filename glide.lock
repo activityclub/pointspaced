@@ -1,6 +1,8 @@
-hash: 1ee85ae2cfa94726ba2c042791f4fe90c411a6b00958d24aadc5477952667e1c
-updated: 2016-02-29T11:35:05.687172649-08:00
+hash: 05e15619db610f38f657213e98fcf543907b502a943a5e371f1731842ed5fd84
+updated: 2016-03-02T13:21:03.567507-08:00
 imports:
+- name: github.com/alecthomas/binary
+  version: 8b2a3aa0ba1c1e495274f8e63f57dc7f76107753
 - name: github.com/bitly/go-nsq
   version: 0b80d6f05e15ca1930e0c5e1d540ed627e299980
   vcs: git
@@ -14,6 +16,13 @@ imports:
   version: 5215b55f46b2b919f50a1df0eaa5886afe4e3b3d
   subpackages:
   - spew
+- name: github.com/donnpebe/go-redis-timeseries
+  version: c4fd4746f231d32dc64043d47f731892de0f651d
+- name: github.com/garyburd/redigo
+  version: 55d64223b60ff7c6a7f1c391f611038a88a86b01
+  vcs: git
+  subpackages:
+  - redis
 - name: github.com/gin-gonic/gin
   version: 00b10c30a00cdba00ba288154052b9e29ec4d0bf
   vcs: git
@@ -25,6 +34,7 @@ imports:
   version: ee05b128a739a0fb76c7ebd3ae4810c1de808d6d
 - name: github.com/mreiferson/go-snappystream
   version: 028eae7ab5c4c9e2d1cb4c4ca1e53259bbe7e504
+  vcs: git
 - name: github.com/pmezard/go-difflib
   version: 792786c7400a136282c1664665ae0a8db921c6c2
   subpackages:
