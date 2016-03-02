@@ -9,7 +9,15 @@ import (
 func main() {
 	fmt.Println("hi")
 	pool := NewRedisPool(":6379")
-	fmt.Println("hi ", pool)
+	r := pool.Get()
+
+	key := "psd:"
+	key = key + "327" + ":" + "0" + ":" + "1" + ":" + "123"
+	value := 55
+	timestamp := time.Now().Unix()
+	r.Do("ZINCRBY", key, value, timestamp)
+	fmt.Println("bye ")
+	r.Close()
 }
 
 func NewRedisPool(server string) *redis.Pool {
