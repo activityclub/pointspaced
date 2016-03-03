@@ -18,5 +18,3 @@ import:
 - package: github.com/mreiferson/go-snappystream
   version: 028eae7ab5c4c9e2d1cb4c4ca1e53259bbe7e504
   vcs: git
-- package: github.com/donnpebe/go-redis-timeseries
-- package: github.com/alecthomas/binary

@@ -4,43 +4,21 @@ import "time"
 import "fmt"
 import "strconv"
 import "errors"
-import "github.com/garyburd/redigo/redis"
 import "pointspaced/psdcontext"
-
-// MOVE ME LATER
-func NewRedisPool(server string) *redis.Pool {
-	return &redis.Pool{
-		MaxIdle:     3,
-		IdleTimeout: 240 * time.Second,
-		Dial: func() (redis.Conn, error) {
-			c, err := redis.Dial("tcp", server)
-			if err != nil {
-				return nil, err
-			}
-			return c, err
-		},
-		TestOnBorrow: func(c redis.Conn, t time.Time) error {
-			_, err := c.Do("PING")
-			return err
-		},
-	}
-}
-
-//////////
 
 type RedisWriter struct{}
 
-func (self RedisWriter) WritePoint(flavor string, userId int64, value int64, activityTypeId int64, timestamp int64) {
+func (self RedisWriter) WritePoint(flavor string, userId int64, value int64, activityTypeId int64, timestamp int64) error {
 
 	if (value == 0) ||
 		(userId == 0) ||
 		(timestamp == 0) ||
 		(activityTypeId == 0) ||
 		(flavor == "") {
-		return
+		return errors.New("invalid arguments")
 	}
 	if timestamp < 1430838227 {
-		return
+		return errors.New("invalid timestamp")
 	}
 
 	buckets, err := self.bucketsForJob(timestamp)
@@ -48,7 +26,7 @@ func (self RedisWriter) WritePoint(flavor string, userId int64, value int64, act
 	r := psdcontext.Ctx.RedisPool.Get()
 
 	if err != nil {
-		fmt.Println("\t[Error] ->", err.Error())
+		return err
 	} else {
 		fmt.Println("\t[Buckets] ->")
 		for _, bucket := range buckets {
@@ -85,7 +63,7 @@ func (self RedisWriter) WritePoint(flavor string, userId int64, value int64, act
 	}
 
 	r.Close()
-
+	return nil
 }
 
 func (self *RedisWriter) bucketsForJob(ts int64) ([]string, error) {
