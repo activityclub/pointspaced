@@ -6,28 +6,41 @@ import (
 	"time"
 )
 
+type PoolHolder struct {
+	pool *redis.Pool
+}
+
 func main() {
 	fmt.Println("hi")
 
 	ts := time.Now().Unix()
-	addToBuckets("327", 10, ts-3601)
-	addToBuckets("327", 50, ts)
+
+	ph := PoolHolder{}
+	ph.pool = NewRedisPool(":6379")
+	i := int64(3601)
+	for {
+		ph.addToBuckets("327", 10, ts-i)
+		i += 3602
+
+		if i > 999999 {
+			break
+		}
+	}
 }
 
-func addToBuckets(user string, val, ts int64) {
+func (self *PoolHolder) addToBuckets(user string, val, ts int64) {
 	t := time.Unix(ts, 0).UTC()
 
 	format := t.Format("20060102")
 	bucket_for_day := fmt.Sprintf("%s", format)
 	bucket_with_hour := fmt.Sprintf("%s%02d", format, t.Hour())
-	addToBucket(user, bucket_for_day, val)
-	addToBucket(user, bucket_with_hour, val)
+	self.addToBucket(user, bucket_for_day, val)
+	self.addToBucket(user, bucket_with_hour, val)
 }
 
-func addToBucket(user, bucket string, val int64) {
+func (self *PoolHolder) addToBucket(user, bucket string, val int64) {
 	//addToBucket("327", "2016030209", 10)
-	pool := NewRedisPool(":6379")
-	r := pool.Get()
+	r := self.pool.Get()
 	key := "psd:"
 	strAType := "0"
 	flavor := "steps"
