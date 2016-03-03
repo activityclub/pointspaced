@@ -10,19 +10,24 @@ func main() {
 	fmt.Println("hi")
 
 	ts := time.Now().Unix()
-	addToBucket("327", 10, ts-3601)
-	addToBucket("327", 50, ts)
+	addToBuckets("327", 10, ts-3601)
+	addToBuckets("327", 50, ts)
 }
 
-func addToBucket(user string, val, ts int64) {
+func addToBuckets(user string, val, ts int64) {
 	t := time.Unix(ts, 0).UTC()
 
-	date := fmt.Sprintf("%s%02d", t.Format("20060102"), 1)
-	fmt.Println(date)
+	format := t.Format("20060102")
+	bucket_for_day := fmt.Sprintf("%s", format)
+	bucket_with_hour := fmt.Sprintf("%s%02d", format, t.Hour())
+	addToBucket(user, bucket_for_day, val)
+	addToBucket(user, bucket_with_hour, val)
+}
+
+func addToBucket(user, bucket string, val int64) {
 	//addToBucket("327", "2016030209", 10)
 	pool := NewRedisPool(":6379")
 	r := pool.Get()
-	bucket := "test"
 	key := "psd:"
 	strAType := "0"
 	flavor := "steps"
