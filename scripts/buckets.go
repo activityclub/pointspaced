@@ -9,21 +9,20 @@ import (
 func main() {
 	fmt.Println("hi")
 
-	//timestamp := time.Now().Unix()
-
-	addToBucket("327", "2016-03-02", 10)
-	addToBucket("327", "2016-03-02 9", 10)
-
-	addToBucket("327", "2016-03-02", 15)
-	addToBucket("327", "2016-03-02 10", 15)
-
-	addToBucket("327", "2016-03-02", 20)
-	addToBucket("327", "2016-03-02 11", 20)
+	ts := time.Now().Unix()
+	addToBucket("327", 10, ts-3601)
+	addToBucket("327", 50, ts)
 }
 
-func addToBucket(user, bucket string, val int) {
+func addToBucket(user string, val, ts int64) {
+	t := time.Unix(ts, 0).UTC()
+
+	date := fmt.Sprintf("%s%02d", t.Format("20060102"), 1)
+	fmt.Println(date)
+	//addToBucket("327", "2016030209", 10)
 	pool := NewRedisPool(":6379")
 	r := pool.Get()
+	bucket := "test"
 	key := "psd:"
 	strAType := "0"
 	flavor := "steps"
