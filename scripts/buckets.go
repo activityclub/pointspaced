@@ -38,7 +38,7 @@ func (self *PoolHolder) total_steps(user string, from, to int64) int {
 	to_utc := time.Unix(to, 0).UTC()
 	fmt.Println(to_utc)
 
-	var buckets []string
+	var buckets []interface{}
 
 	hour := from_utc.Hour()
 	for {
@@ -114,10 +114,10 @@ func (self *PoolHolder) addToBuckets(user string, val int, ts int64) {
 	self.addToBucket(user, bucket_with_hour, val)
 }
 
-func (self *PoolHolder) readBuckets(buckets []string) {
+func (self *PoolHolder) readBuckets(buckets []interface{}) {
 	//addToBucket("327", "2016030209", 10)
 	r := self.pool.Get()
-	w, ww := r.Do("MGET", buckets)
+	w, ww := r.Do("MGET", buckets...)
 	fmt.Println("bye ", w, ww)
 	r.Close()
 }
