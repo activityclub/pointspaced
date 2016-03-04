@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/garyburd/redigo/redis"
+	"math/rand"
 	"time"
 )
 
@@ -11,6 +12,48 @@ type PoolHolder struct {
 }
 
 func main() {
+	fmt.Println("query from to")
+	ph := PoolHolder{}
+	ph.pool = NewRedisPool(":6379")
+	var from, to int64
+	from = 1457100000 - (86400 * 3) - 3600
+	to = 1457100000
+
+	total := ph.total_steps(from, to)
+	fmt.Println("total ", total)
+}
+
+func bucket_with_hour(t time.Time, hour int) string {
+	format := t.Format("20060102")
+	return fmt.Sprintf("%s%02d", format, hour)
+}
+
+func (self *PoolHolder) total_steps(from, to int64) int {
+	from_utc := time.Unix(from, 0).UTC()
+	//to_utc := time.Unix(to, 0).UTC()
+
+	hour := from_utc.Hour()
+	for {
+		if hour > 23 {
+			break
+		}
+		bucket := bucket_with_hour(from_utc, hour)
+		fmt.Println(bucket)
+		hour += 1
+	}
+
+	// x hour buckets before 1st full day
+	// y full day buckets
+	// z hour buckets after last full day
+
+	//format := t.Format("20060102")
+	//bucket_for_day := fmt.Sprintf("%s", format)
+	//bucket_with_hour := fmt.Sprintf("%s%02d", format, t.Hour())
+
+	return 0
+}
+
+func main2() {
 	fmt.Println("hi")
 
 	ts := time.Now().Unix()
@@ -19,7 +62,9 @@ func main() {
 	ph.pool = NewRedisPool(":6379")
 	i := int64(3601)
 	for {
-		ph.addToBuckets("327", 10, ts-i)
+		steps := rand.Intn(999)
+		fmt.Println(steps)
+		ph.addToBuckets("327", steps, ts-i)
 		i += 3602
 
 		if i > 999999 {
@@ -28,7 +73,7 @@ func main() {
 	}
 }
 
-func (self *PoolHolder) addToBuckets(user string, val, ts int64) {
+func (self *PoolHolder) addToBuckets(user string, val int, ts int64) {
 	t := time.Unix(ts, 0).UTC()
 
 	format := t.Format("20060102")
@@ -38,7 +83,7 @@ func (self *PoolHolder) addToBuckets(user string, val, ts int64) {
 	self.addToBucket(user, bucket_with_hour, val)
 }
 
-func (self *PoolHolder) addToBucket(user, bucket string, val int64) {
+func (self *PoolHolder) addToBucket(user, bucket string, val int) {
 	//addToBucket("327", "2016030209", 10)
 	r := self.pool.Get()
 	key := "psd:"
