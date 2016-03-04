@@ -59,13 +59,17 @@ func (self *PoolHolder) total_steps(from, to int64) int {
 		from_utc = from_utc.Add(time.Hour * 24)
 	}
 
-	// x hour buckets before 1st full day
-	// y full day buckets
-	// z hour buckets after last full day
-
-	//format := t.Format("20060102")
-	//bucket_for_day := fmt.Sprintf("%s", format)
-	//bucket_with_hour := fmt.Sprintf("%s%02d", format, t.Hour())
+	fmt.Println("----")
+	hour = from_utc.Hour()
+	for {
+		if hour > 23 {
+			break
+		}
+		bucket := bucket_with_hour(from_utc, hour)
+		fmt.Println(bucket)
+		hour += 1
+		from_utc = from_utc.Add(time.Hour)
+	}
 
 	return 0
 }
