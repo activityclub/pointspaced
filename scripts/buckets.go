@@ -117,7 +117,7 @@ func (self *PoolHolder) addToBuckets(user string, val int, ts int64) {
 func (self *PoolHolder) readBuckets(buckets []interface{}) {
 	//addToBucket("327", "2016030209", 10)
 	r := self.pool.Get()
-	w, ww := r.Do("MGET", buckets...)
+	w, ww := redis.Strings(r.Do("MGET", buckets...))
 	fmt.Println("bye ", w, ww)
 	r.Close()
 }
