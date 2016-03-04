@@ -79,9 +79,7 @@ func (self *PoolHolder) total_steps(user string, from, to int64) int {
 
 	fmt.Println("----")
 	fmt.Println(buckets)
-	self.readBuckets(buckets)
-
-	return 0
+	return self.readBuckets(buckets)
 }
 
 func main2() {
@@ -114,12 +112,19 @@ func (self *PoolHolder) addToBuckets(user string, val int, ts int64) {
 	self.addToBucket(user, bucket_with_hour, val)
 }
 
-func (self *PoolHolder) readBuckets(buckets []interface{}) {
+func (self *PoolHolder) readBuckets(buckets []interface{}) int {
 	//addToBucket("327", "2016030209", 10)
 	r := self.pool.Get()
-	w, ww := redis.Strings(r.Do("MGET", buckets...))
-	fmt.Println("bye ", w, ww)
+	values, err := redis.Ints(r.Do("MGET", buckets...))
+	if err != nil {
+		panic(err)
+	}
+	sum := 0
+	for _, v := range values {
+		sum += v
+	}
 	r.Close()
+	return sum
 }
 
 func makeKey(user, bucket string) string {
