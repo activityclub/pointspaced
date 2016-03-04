@@ -23,6 +23,11 @@ func main() {
 	fmt.Println("total ", total)
 }
 
+func bucket_for_day(t time.Time) string {
+	format := t.Format("20060102")
+	return fmt.Sprintf("%s", format)
+}
+
 func bucket_with_hour(t time.Time, hour int) string {
 	format := t.Format("20060102")
 	return fmt.Sprintf("%s%02d", format, hour)
@@ -41,16 +46,15 @@ func (self *PoolHolder) total_steps(from, to int64) int {
 		fmt.Println(bucket)
 		hour += 1
 		from_utc = from_utc.Add(time.Hour)
-
-		fmt.Println(from_utc)
 	}
 
 	fmt.Println("----")
 	for {
-		fmt.Println(from_utc)
 		if from_utc.Unix() >= to_utc.Unix() {
 			break
 		}
+		bucket := bucket_for_day(from_utc)
+		fmt.Println(bucket)
 
 		from_utc = from_utc.Add(time.Hour * 24)
 	}
