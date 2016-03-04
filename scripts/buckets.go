@@ -16,7 +16,7 @@ func main() {
 	ph := PoolHolder{}
 	ph.pool = NewRedisPool(":6379")
 	var from, to int64
-	from = 1457100000 - (86400 * 3) - 3600
+	from = 1457100000 - (86400 * 4) - 3600
 	to = 1457100000
 
 	total := ph.total_steps(from, to)
@@ -38,6 +38,8 @@ func (self *PoolHolder) total_steps(from, to int64) int {
 	to_utc := time.Unix(to, 0).UTC()
 	fmt.Println(to_utc)
 
+	var buckets []string
+
 	hour := from_utc.Hour()
 	for {
 		if hour > 23 {
@@ -45,6 +47,7 @@ func (self *PoolHolder) total_steps(from, to int64) int {
 		}
 		bucket := bucket_with_hour(from_utc, hour)
 		fmt.Println(bucket)
+		buckets = append(buckets, bucket)
 		hour += 1
 		from_utc = from_utc.Add(time.Hour)
 	}
@@ -63,7 +66,7 @@ func (self *PoolHolder) total_steps(from, to int64) int {
 	fmt.Println("----")
 	hour = from_utc.Hour()
 	for {
-		if from_utc.Unix() >= to_utc.Unix() {
+		if from_utc.Unix() > to_utc.Unix() {
 			break
 		}
 		bucket := bucket_with_hour(from_utc, hour)
@@ -71,6 +74,10 @@ func (self *PoolHolder) total_steps(from, to int64) int {
 		hour += 1
 		from_utc = from_utc.Add(time.Hour)
 	}
+
+	fmt.Println("----")
+	fmt.Println(buckets)
+	self.readBuckets(buckets)
 
 	return 0
 }
@@ -103,6 +110,14 @@ func (self *PoolHolder) addToBuckets(user string, val int, ts int64) {
 	bucket_with_hour := fmt.Sprintf("%s%02d", format, t.Hour())
 	self.addToBucket(user, bucket_for_day, val)
 	self.addToBucket(user, bucket_with_hour, val)
+}
+
+func (self *PoolHolder) readBuckets(buckets []string) {
+	//addToBucket("327", "2016030209", 10)
+	r := self.pool.Get()
+	w, ww := r.Do("MGET", buckets)
+	fmt.Println("bye ", w, ww)
+	r.Close()
 }
 
 func (self *PoolHolder) addToBucket(user, bucket string, val int) {
