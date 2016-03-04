@@ -36,6 +36,7 @@ func bucket_with_hour(t time.Time, hour int) string {
 func (self *PoolHolder) total_steps(from, to int64) int {
 	from_utc := time.Unix(from, 0).UTC()
 	to_utc := time.Unix(to, 0).UTC()
+	fmt.Println(to_utc)
 
 	hour := from_utc.Hour()
 	for {
@@ -50,7 +51,7 @@ func (self *PoolHolder) total_steps(from, to int64) int {
 
 	fmt.Println("----")
 	for {
-		if from_utc.Unix() >= to_utc.Unix() {
+		if from_utc.Unix() >= (to_utc.Unix() - 86400) {
 			break
 		}
 		bucket := bucket_for_day(from_utc)
@@ -62,7 +63,7 @@ func (self *PoolHolder) total_steps(from, to int64) int {
 	fmt.Println("----")
 	hour = from_utc.Hour()
 	for {
-		if hour > 23 {
+		if from_utc.Unix() >= to_utc.Unix() {
 			break
 		}
 		bucket := bucket_with_hour(from_utc, hour)
