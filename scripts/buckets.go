@@ -30,7 +30,7 @@ func bucket_with_hour(t time.Time, hour int) string {
 
 func (self *PoolHolder) total_steps(from, to int64) int {
 	from_utc := time.Unix(from, 0).UTC()
-	//to_utc := time.Unix(to, 0).UTC()
+	to_utc := time.Unix(to, 0).UTC()
 
 	hour := from_utc.Hour()
 	for {
@@ -40,9 +40,19 @@ func (self *PoolHolder) total_steps(from, to int64) int {
 		bucket := bucket_with_hour(from_utc, hour)
 		fmt.Println(bucket)
 		hour += 1
-		from_utc = from_utc.Add(1000 * 1000 * 1000 * 60 * 60)
+		from_utc = from_utc.Add(time.Hour)
 
 		fmt.Println(from_utc)
+	}
+
+	fmt.Println("----")
+	for {
+		fmt.Println(from_utc)
+		if from_utc.Unix() >= to_utc.Unix() {
+			break
+		}
+
+		from_utc = from_utc.Add(time.Hour * 24)
 	}
 
 	// x hour buckets before 1st full day
