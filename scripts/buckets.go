@@ -40,6 +40,9 @@ func (self *PoolHolder) total_steps(from, to int64) int {
 		bucket := bucket_with_hour(from_utc, hour)
 		fmt.Println(bucket)
 		hour += 1
+		from_utc = from_utc.Add(1000 * 1000 * 1000 * 60 * 60)
+
+		fmt.Println(from_utc)
 	}
 
 	// x hour buckets before 1st full day
