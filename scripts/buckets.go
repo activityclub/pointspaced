@@ -19,7 +19,7 @@ func main() {
 	from = 1457100000 - (86400 * 4) - 3600
 	to = 1457100000
 
-	total := ph.total_steps(from, to)
+	total := ph.total_steps("327", from, to)
 	fmt.Println("total ", total)
 }
 
@@ -33,7 +33,7 @@ func bucket_with_hour(t time.Time, hour int) string {
 	return fmt.Sprintf("%s%02d", format, hour)
 }
 
-func (self *PoolHolder) total_steps(from, to int64) int {
+func (self *PoolHolder) total_steps(user string, from, to int64) int {
 	from_utc := time.Unix(from, 0).UTC()
 	to_utc := time.Unix(to, 0).UTC()
 	fmt.Println(to_utc)
@@ -47,7 +47,7 @@ func (self *PoolHolder) total_steps(from, to int64) int {
 		}
 		bucket := bucket_with_hour(from_utc, hour)
 		fmt.Println(bucket)
-		buckets = append(buckets, bucket)
+		buckets = append(buckets, makeKey(user, bucket))
 		hour += 1
 		from_utc = from_utc.Add(time.Hour)
 	}
@@ -59,6 +59,7 @@ func (self *PoolHolder) total_steps(from, to int64) int {
 		}
 		bucket := bucket_for_day(from_utc)
 		fmt.Println(bucket)
+		buckets = append(buckets, makeKey(user, bucket))
 
 		from_utc = from_utc.Add(time.Hour * 24)
 	}
@@ -71,6 +72,7 @@ func (self *PoolHolder) total_steps(from, to int64) int {
 		}
 		bucket := bucket_with_hour(from_utc, hour)
 		fmt.Println(bucket)
+		buckets = append(buckets, makeKey(user, bucket))
 		hour += 1
 		from_utc = from_utc.Add(time.Hour)
 	}
@@ -120,13 +122,18 @@ func (self *PoolHolder) readBuckets(buckets []string) {
 	r.Close()
 }
 
-func (self *PoolHolder) addToBucket(user, bucket string, val int) {
-	//addToBucket("327", "2016030209", 10)
-	r := self.pool.Get()
+func makeKey(user, bucket string) string {
 	key := "psd:"
 	strAType := "0"
 	flavor := "steps"
 	key = key + user + ":" + strAType + ":" + flavor + ":" + bucket
+	return key
+}
+
+func (self *PoolHolder) addToBucket(user, bucket string, val int) {
+	//addToBucket("327", "2016030209", 10)
+	r := self.pool.Get()
+	key := makeKey(user, bucket)
 	w, ww := r.Do("INCRBY", key, val)
 	fmt.Println("bye ", w, ww)
 	r.Close()
