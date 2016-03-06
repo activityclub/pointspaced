@@ -38,7 +38,7 @@ func (self *PoolHolder) total_steps(user string, from, to int64) int {
 	to_utc := time.Unix(to, 0).UTC()
 	fmt.Println(to_utc)
 
-	var buckets []interface{}
+	var buckets []string
 
 	hour := from_utc.Hour()
 	for {
@@ -67,7 +67,7 @@ func (self *PoolHolder) total_steps(user string, from, to int64) int {
 	fmt.Println("----")
 	hour = from_utc.Hour()
 	for {
-		if from_utc.Unix() > to_utc.Unix() {
+		if from_utc.Unix() >= to_utc.Unix() {
 			break
 		}
 		bucket := bucket_with_hour(from_utc, hour)
@@ -112,17 +112,23 @@ func (self *PoolHolder) addToBuckets(user string, val int, ts int64) {
 	self.addToBucket(user, bucket_with_hour, val)
 }
 
-func (self *PoolHolder) readBuckets(buckets []interface{}) int {
+func (self *PoolHolder) readBuckets(buckets []string) int {
 	//addToBucket("327", "2016030209", 10)
 	r := self.pool.Get()
-	values, err := redis.Ints(r.Do("MGET", buckets...))
-	if err != nil {
-		panic(err)
+
+	for _, b := range buckets {
+		r.Send("GET", b)
 	}
+	r.Flush()
 	sum := 0
-	for _, v := range values {
+	for _, _ = range buckets {
+		v, err := redis.Int(r.Receive())
+		if err != nil {
+			fmt.Println(err)
+		}
 		sum += v
 	}
+
 	r.Close()
 	return sum
 }
