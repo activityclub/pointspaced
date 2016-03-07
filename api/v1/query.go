@@ -29,18 +29,18 @@ func Query(c *gin.Context) {
 	var uids = []int64{}
 
 	for _, i := range strings.Split(uidStr, ",") {
-		j, _ := strconv.Atoi(i)
-		uids = append(uids, int64(j))
+		j, _ := strconv.ParseInt(i, 10, 64)
+		uids = append(uids, j)
 	}
 
 	var atypes = []int64{0}
 	if activity_types == "" {
 	}
 
-	start_ts_int, _ := strconv.Atoi(start_ts)
-	end_ts_int, _ := strconv.Atoi(end_ts)
+	start_ts_int, _ := strconv.ParseInt(start_ts, 10, 64)
+	end_ts_int, _ := strconv.ParseInt(end_ts, 10, 64)
 
-	qr := buildResults(uids, metric, atypes, int64(start_ts_int), int64(end_ts_int))
+	qr := buildResults(uids, metric, atypes, start_ts_int, end_ts_int)
 
 	c.JSON(200, qr)
 }
