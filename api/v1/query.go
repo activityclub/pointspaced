@@ -23,9 +23,6 @@ func Query(c *gin.Context) {
 	start_ts := c.Param("start_ts")
 	end_ts := c.Param("end_ts")
 
-	// todo - split these by comma; cast to int; and then send
-	// to persistence to fetch results, or similar
-
 	var uids = []int64{}
 
 	for _, i := range strings.Split(uidStr, ",") {
@@ -34,7 +31,9 @@ func Query(c *gin.Context) {
 	}
 
 	var atypes = []int64{0}
-	if activity_types == "" {
+	for _, i := range strings.Split(activity_types, ",") {
+		j, _ := strconv.ParseInt(i, 10, 64)
+		atypes = append(atypes, j)
 	}
 
 	start_ts_int, _ := strconv.ParseInt(start_ts, 10, 64)
