@@ -1,6 +1,9 @@
 package v1
 
-import "github.com/gin-gonic/gin"
+import (
+	"github.com/gin-gonic/gin"
+	"pointspaced/persistence"
+)
 
 //import "strings"
 
@@ -30,4 +33,5 @@ func Query(c *gin.Context) {
 
 func buildResults(uids []int64, metric string, aTypes []int64, start_ts int64, end_ts int64) {
 
+	persistence.ReadBuckets()
 }
