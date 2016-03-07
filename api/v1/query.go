@@ -7,10 +7,6 @@ import (
 	"strings"
 )
 
-type QueryResponse struct {
-	Sum int64 `json:"sum"`
-}
-
 // query takes
 //  activity_types [48,4]
 //  metric "points"
@@ -39,16 +35,11 @@ func Query(c *gin.Context) {
 	start_ts_int, _ := strconv.ParseInt(start_ts, 10, 64)
 	end_ts_int, _ := strconv.ParseInt(end_ts, 10, 64)
 
-	qr := buildResults(uids, metric, atypes, start_ts_int, end_ts_int)
+	qr := persistence.ReadBuckets(uids, metric, atypes, start_ts_int, end_ts_int)
 
 	c.JSON(200, qr)
 }
 
-func buildResults(uids []int64, metric string, aTypes []int64, start_ts int64, end_ts int64) QueryResponse {
+func buildResults(uids []int64, metric string, aTypes []int64, start_ts int64, end_ts int64) {
 
-	persistence.ReadBuckets()
-
-	qr := QueryResponse{}
-	qr.Sum = 123
-	return qr
 }

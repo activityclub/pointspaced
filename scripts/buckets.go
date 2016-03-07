@@ -11,7 +11,7 @@ type PoolHolder struct {
 	pool *redis.Pool
 }
 
-func main() {
+func main2() {
 	fmt.Println("query from to")
 	ph := PoolHolder{}
 	ph.pool = NewRedisPool(":6379")
@@ -82,7 +82,7 @@ func (self *PoolHolder) total_steps(user string, from, to int64) int {
 	return self.readBuckets(buckets)
 }
 
-func main2() {
+func main() {
 	fmt.Println("hi")
 
 	ts := time.Now().Unix()
@@ -93,7 +93,7 @@ func main2() {
 	for {
 		steps := rand.Intn(999)
 		fmt.Println(steps)
-		ph.addToBuckets("327", steps, ts-i)
+		ph.addToBuckets("1", steps, ts-i)
 		i += 3602
 
 		if i > 999999 {
