@@ -99,7 +99,7 @@ func (self *SimpleSum) hour_buckets_after_full_days(to time.Time) []string {
 	list := make([]string, 0)
 	hour := self.From.Hour()
 	for {
-		if self.From.Unix() > to.Unix()+3600 {
+		if self.From.Unix() >= to.Unix()+3600 {
 			break
 		}
 		bucket := bucket_with_hour(self.From, hour)
