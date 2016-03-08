@@ -20,9 +20,9 @@ func ReadBuckets(uids []int64, metric string, aTypes []int64, start_ts int64, en
 	qr.UserToSum["327"] = 2342342
 	qr.UserToSum["1"] = 12342342
 
-	for uid := range uids {
-		buckets := bucketsForRange(int64(uid), start_ts, end_ts)
-		fmt.Println("hi ", buckets)
+	for _, uid := range uids {
+		buckets := bucketsForRange(uid, start_ts, end_ts)
+		fmt.Println("hi ", uid, buckets)
 	}
 	return qr
 }
