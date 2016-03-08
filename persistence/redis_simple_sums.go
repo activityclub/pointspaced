@@ -23,9 +23,11 @@ func ReadBuckets(uids []int64, metric string, aTypes []int64, start_ts int64, en
 
 	buckets := bucketsForRange(start_ts, end_ts)
 	for _, uid := range uids {
+		sum := int64(0)
 		for _, atype := range aTypes {
-			qr.UserToSum[strconv.FormatInt(uid, 10)] = sumFromRedis(buckets, uid, atype, metric)
+			sum += sumFromRedis(buckets, uid, atype, metric)
 		}
+		qr.UserToSum[strconv.FormatInt(uid, 10)] = sum
 	}
 
 	return qr

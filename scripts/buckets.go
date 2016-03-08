@@ -8,12 +8,11 @@ import (
 	"time"
 )
 
-func randMetric(uid int64, metric string) {
+func randMetric(uid, atype int64, metric string) {
 	m := int64(rand.Intn(999))
 	fmt.Println(m)
 	ts := time.Now().Unix()
-	persistence.WriteMetric(uid, m, 3, ts, metric)
-	persistence.WriteMetric(uid, m, 5, ts, metric)
+	persistence.WriteMetric(uid, m, atype, ts, metric)
 }
 
 func main() {
@@ -21,10 +20,15 @@ func main() {
 	fmt.Println("hi")
 
 	for {
-		randMetric(327, "points")
-		randMetric(1, "points")
-		randMetric(327, "calories")
-		randMetric(1, "calories")
+		randMetric(327, 3, "points")
+		randMetric(1, 3, "points")
+		randMetric(327, 3, "calories")
+		randMetric(1, 3, "calories")
+
+		randMetric(327, 5, "points")
+		randMetric(1, 5, "points")
+		randMetric(327, 5, "calories")
+		randMetric(1, 5, "calories")
 
 		time.Sleep(1 * time.Second)
 	}
