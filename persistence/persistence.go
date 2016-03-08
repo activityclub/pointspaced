@@ -25,20 +25,20 @@ type QueryResponse struct {
 	UserToSum map[string]int64 `json:"results"`
 }
 
-type MetricWriter interface {
+type MetricRW interface {
 	WritePoint(flavor string, userId int64, value int64, activityTypeId int64, timestamp int64) error
 	ReadBuckets(uids []int64, metric string, aTypes []int64, start_ts int64, end_ts int64) QueryResponse
 }
 
 type MetricManager struct {
-	MetricWriter
+	MetricRW
 }
 
 func NewMetricManager() *MetricManager {
 	mm := MetricManager{}
 
 	// TODO make configurable?
-	mm.MetricWriter = RedisSimple{}
+	mm.MetricRW = RedisSimple{}
 
 	return &mm
 }

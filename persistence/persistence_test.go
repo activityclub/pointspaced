@@ -11,7 +11,7 @@ func TestValidWrite(t *testing.T) {
 	psdcontext.Ctx.RedisPool = NewRedisPool(":6379")
 
 	mm := NewMetricManager()
-	err := mm.MetricWriter.WritePoint("steps", 1, 10, 3, time.Now().Unix())
+	err := mm.MetricRW.WritePoint("steps", 1, 10, 3, time.Now().Unix())
 	if err != nil {
 		t.Fail()
 	}
@@ -20,7 +20,7 @@ func TestValidWrite(t *testing.T) {
 func TestInvalidWrite(t *testing.T) {
 	psdcontext.Ctx.RedisPool = NewRedisPool(":6379")
 	mm := NewMetricManager()
-	err := mm.MetricWriter.WritePoint("steps", 1, 10, 3, 1430838226)
+	err := mm.MetricRW.WritePoint("steps", 1, 10, 3, 1430838226)
 	if err == nil {
 		t.Fail()
 	}

@@ -22,6 +22,6 @@ func ProcessMetricJob(metric MetricJob) {
 	if curManager == nil {
 		curManager = persistence.NewMetricManager()
 	}
-	curManager.MetricWriter.WritePoint("steps", metric.UserId, metric.Steps, metric.ActivityTypeId, metric.Timestamp)
-	curManager.MetricWriter.WritePoint("points", metric.UserId, metric.Points, metric.ActivityTypeId, metric.Timestamp)
+	curManager.MetricRW.WritePoint("steps", metric.UserId, metric.Steps, metric.ActivityTypeId, metric.Timestamp)
+	curManager.MetricRW.WritePoint("points", metric.UserId, metric.Points, metric.ActivityTypeId, metric.Timestamp)
 }
