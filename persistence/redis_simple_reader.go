@@ -19,11 +19,11 @@ func (self RedisSimple) ReadBuckets(uids []int64, metric string, aTypes []int64,
 
 	qr := QueryResponse{}
 	qr.UserToSum = make(map[string]int64)
-	if debug == "1" {
-		qr.Debug = "Test"
-	}
 
 	buckets := bucketsForRange(start_ts, end_ts)
+	if debug == "1" {
+		qr.Debug = buckets
+	}
 	for _, uid := range uids {
 		sum := int64(0)
 		for _, atype := range aTypes {
@@ -99,7 +99,7 @@ func (self *SimpleSum) hour_buckets_after_full_days(to time.Time) []string {
 	list := make([]string, 0)
 	hour := self.From.Hour()
 	for {
-		if self.From.Unix() > to.Unix() {
+		if self.From.Unix() > to.Unix()+3600 {
 			break
 		}
 		bucket := bucket_with_hour(self.From, hour)
