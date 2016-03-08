@@ -46,20 +46,20 @@ func bucketsForRange(start_ts, end_ts int64) []string {
 	simple.From = time.Unix(start_ts, 0)
 	to := time.Unix(end_ts, 0)
 
-	for _, b := range simple.day_buckets_before_full_days() {
+	for _, b := range simple.hour_buckets_before_full_days() {
 		list = append(list, b)
 	}
 	for _, b := range simple.full_day_buckets(to) {
 		list = append(list, b)
 	}
-	for _, b := range simple.day_buckets_after_full_days(to) {
+	for _, b := range simple.hour_buckets_after_full_days(to) {
 		list = append(list, b)
 	}
 
 	return list
 }
 
-func (self *SimpleSum) day_buckets_before_full_days() []string {
+func (self *SimpleSum) hour_buckets_before_full_days() []string {
 	list := make([]string, 0)
 	hour := self.From.Hour()
 	for {
@@ -89,7 +89,7 @@ func (self *SimpleSum) full_day_buckets(to time.Time) []string {
 	return list
 }
 
-func (self *SimpleSum) day_buckets_after_full_days(to time.Time) []string {
+func (self *SimpleSum) hour_buckets_after_full_days(to time.Time) []string {
 	list := make([]string, 0)
 	hour := self.From.Hour()
 	for {

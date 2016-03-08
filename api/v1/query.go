@@ -39,7 +39,3 @@ func Query(c *gin.Context) {
 
 	c.JSON(200, qr)
 }
-
-func buildResults(uids []int64, metric string, aTypes []int64, start_ts int64, end_ts int64) {
-
-}
