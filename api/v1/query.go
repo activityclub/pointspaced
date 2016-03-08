@@ -18,6 +18,7 @@ func Query(c *gin.Context) {
 	activity_types := c.Param("activity_types")
 	start_ts := c.Param("start_ts")
 	end_ts := c.Param("end_ts")
+	debug := c.Query("debug")
 
 	var uids = []int64{}
 
@@ -36,7 +37,7 @@ func Query(c *gin.Context) {
 	end_ts_int, _ := strconv.ParseInt(end_ts, 10, 64)
 
 	mm := persistence.NewMetricManager()
-	qr := mm.ReadBuckets(uids, metric, atypes, start_ts_int, end_ts_int)
+	qr := mm.ReadBuckets(uids, metric, atypes, start_ts_int, end_ts_int, debug)
 
 	c.JSON(200, qr)
 }

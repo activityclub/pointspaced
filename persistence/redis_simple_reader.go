@@ -15,10 +15,13 @@ type SimpleSum struct {
 type RedisSimple struct {
 }
 
-func (self RedisSimple) ReadBuckets(uids []int64, metric string, aTypes []int64, start_ts int64, end_ts int64) QueryResponse {
+func (self RedisSimple) ReadBuckets(uids []int64, metric string, aTypes []int64, start_ts int64, end_ts int64, debug string) QueryResponse {
 
 	qr := QueryResponse{}
 	qr.UserToSum = make(map[string]int64)
+	if debug == "1" {
+		qr.Debug = "Test"
+	}
 
 	buckets := bucketsForRange(start_ts, end_ts)
 	for _, uid := range uids {
