@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/rand"
 	"pointspaced/persistence"
+	"pointspaced/psdcontext"
 	"time"
 )
 
@@ -16,6 +17,7 @@ func randMetric(uid int64, metric string) {
 }
 
 func main() {
+	psdcontext.Ctx.RedisPool = persistence.NewRedisPool(":6379")
 	fmt.Println("hi")
 
 	for {

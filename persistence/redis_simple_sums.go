@@ -114,7 +114,6 @@ func makeKey(uid, atype int64, bucket, metric string) string {
 }
 
 func sumFromRedis(buckets []string, uid, atype int64, metric string) int64 {
-	psdcontext.Ctx.RedisPool = NewRedisPool(":6379")
 	r := psdcontext.Ctx.RedisPool.Get()
 
 	for _, b := range buckets {

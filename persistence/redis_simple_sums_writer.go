@@ -19,7 +19,6 @@ func WriteMetric(uid, val, atype, ts int64, metric string) {
 }
 
 func addToBucket(uid, atype, val int64, bucket, metric string) {
-	psdcontext.Ctx.RedisPool = NewRedisPool(":6379")
 	r := psdcontext.Ctx.RedisPool.Get()
 	key := makeKey(uid, atype, bucket, metric)
 	_, err := r.Do("INCRBY", key, val)
