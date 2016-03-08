@@ -33,7 +33,7 @@ func NewMetricManager() *MetricManager {
 	mm := MetricManager{}
 
 	// TODO make configurable?
-	mm.MetricWriter = RedisWriter{}
+	mm.MetricWriter = RedisSimple{}
 
 	return &mm
 }

@@ -9,10 +9,11 @@ import (
 )
 
 func randMetric(uid, atype int64, metric string) {
-	m := int64(rand.Intn(999))
-	fmt.Println(m)
+	val := int64(rand.Intn(999))
+	fmt.Println(val)
 	ts := time.Now().Unix()
-	persistence.WriteMetric(uid, m, atype, ts, metric)
+	rs := persistence.NewMetricManager()
+	rs.WritePoint(metric, uid, val, atype, ts)
 }
 
 func main() {
