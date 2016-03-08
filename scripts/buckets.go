@@ -12,7 +12,7 @@ func randMetric(uid, atype int64, metric string) {
 	val := int64(rand.Intn(999))
 	fmt.Println(val)
 	ts := time.Now().Unix()
-	rs := persistence.NewMetricManager()
+	rs := persistence.RedisSeeder{}
 	rs.WritePoint(metric, uid, val, atype, ts)
 }
 
