@@ -12,6 +12,10 @@ type QueryResponse struct {
 	UserToSum map[string]int64 `json:"results"`
 }
 
+type SimpleSum struct {
+	From time.Time
+}
+
 func ReadBuckets(uids []int64, metric string, aTypes []int64, start_ts int64, end_ts int64) QueryResponse {
 
 	qr := QueryResponse{}
@@ -37,12 +41,14 @@ func bucket_with_hour(t time.Time, hour int) string {
 func bucketsForRange(uid, start_ts, end_ts int64) []string {
 	list := make([]string, 0)
 
-	from := time.Unix(start_ts, 0)
+	simple := SimpleSum{}
+	simple.From = time.Unix(start_ts, 0)
+	to := time.Unix(end_ts, 0)
 
-	for _, b := range day_buckets_before_full_days(uid, from) {
+	for _, b := range simple.day_buckets_before_full_days(uid) {
 		list = append(list, b)
 	}
-	for _, b := range full_day_buckets() {
+	for _, b := range simple.full_day_buckets(uid, to) {
 		list = append(list, b)
 	}
 	for _, b := range day_buckets_after_full_days() {
@@ -52,25 +58,34 @@ func bucketsForRange(uid, start_ts, end_ts int64) []string {
 	return list
 }
 
-func day_buckets_before_full_days(uid int64, from time.Time) []string {
+func (self *SimpleSum) day_buckets_before_full_days(uid int64) []string {
 	list := make([]string, 0)
-	hour := from.Hour()
+	hour := self.From.Hour()
 	for {
 		if hour > 23 {
 			break
 		}
-		bucket := bucket_with_hour(from, hour)
+		bucket := bucket_with_hour(self.From, hour)
 		list = append(list, makeKey(uid, bucket))
 		hour += 1
-		from = from.Add(time.Hour)
+		self.From = self.From.Add(time.Hour)
 	}
 
 	return list
 }
 
-func full_day_buckets() []string {
-	temp := []string{}
-	return temp
+func (self *SimpleSum) full_day_buckets(uid int64, to time.Time) []string {
+	list := make([]string, 0)
+	for {
+		if self.From.Unix() >= (to.Unix() - 86400) {
+			break
+		}
+		bucket := bucket_for_day(self.From)
+		list = append(list, makeKey(uid, bucket))
+
+		self.From = self.From.Add(time.Hour * 24)
+	}
+	return list
 }
 
 func day_buckets_after_full_days() []string {
