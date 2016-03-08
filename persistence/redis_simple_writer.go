@@ -6,9 +6,6 @@ import (
 	"time"
 )
 
-type RedisSimple struct {
-}
-
 func (self RedisSimple) WritePoint(flavor string, userId int64, value int64, activityTypeId int64, timestamp int64) error {
 
 	t := time.Unix(timestamp, 0)

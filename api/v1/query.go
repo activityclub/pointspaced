@@ -35,7 +35,8 @@ func Query(c *gin.Context) {
 	start_ts_int, _ := strconv.ParseInt(start_ts, 10, 64)
 	end_ts_int, _ := strconv.ParseInt(end_ts, 10, 64)
 
-	qr := persistence.ReadBuckets(uids, metric, atypes, start_ts_int, end_ts_int)
+	mm := persistence.NewMetricManager()
+	qr := mm.ReadBuckets(uids, metric, atypes, start_ts_int, end_ts_int)
 
 	c.JSON(200, qr)
 }

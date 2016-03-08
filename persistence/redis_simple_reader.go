@@ -8,15 +8,14 @@ import (
 	"time"
 )
 
-type QueryResponse struct {
-	UserToSum map[string]int64 `json:"results"`
-}
-
 type SimpleSum struct {
 	From time.Time
 }
 
-func ReadBuckets(uids []int64, metric string, aTypes []int64, start_ts int64, end_ts int64) QueryResponse {
+type RedisSimple struct {
+}
+
+func (self RedisSimple) ReadBuckets(uids []int64, metric string, aTypes []int64, start_ts int64, end_ts int64) QueryResponse {
 
 	qr := QueryResponse{}
 	qr.UserToSum = make(map[string]int64)
