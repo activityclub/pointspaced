@@ -23,7 +23,7 @@ func ReadBuckets(uids []int64, metric string, aTypes []int64, start_ts int64, en
 
 	buckets := bucketsForRange(start_ts, end_ts)
 	for _, uid := range uids {
-		qr.UserToSum[strconv.FormatInt(uid, 10)] = sumFromRedis(buckets, uid)
+		qr.UserToSum[strconv.FormatInt(uid, 10)] = sumFromRedis(buckets, uid, metric)
 	}
 
 	return qr
@@ -104,20 +104,19 @@ func (self *SimpleSum) hour_buckets_after_full_days(to time.Time) []string {
 	return list
 }
 
-func makeKey(uid int64, bucket string) string {
+func makeKey(uid int64, bucket, metric string) string {
 	key := "psd:"
 	strAType := "0"
-	flavor := "steps"
-	key = key + strconv.FormatInt(uid, 10) + ":" + strAType + ":" + flavor + ":" + bucket
+	key = key + strconv.FormatInt(uid, 10) + ":" + strAType + ":" + metric + ":" + bucket
 	return key
 }
 
-func sumFromRedis(buckets []string, uid int64) int64 {
+func sumFromRedis(buckets []string, uid int64, metric string) int64 {
 	psdcontext.Ctx.RedisPool = NewRedisPool(":6379")
 	r := psdcontext.Ctx.RedisPool.Get()
 
 	for _, b := range buckets {
-		r.Send("GET", makeKey(uid, b))
+		r.Send("GET", makeKey(uid, b, metric))
 	}
 	r.Flush()
 	var sum int64
