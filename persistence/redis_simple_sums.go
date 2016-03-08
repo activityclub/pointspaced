@@ -2,6 +2,7 @@ package persistence
 
 import (
 	"fmt"
+	"github.com/garyburd/redigo/redis"
 	"pointspaced/psdcontext"
 	"strconv"
 	"time"
@@ -12,17 +13,13 @@ type QueryResponse struct {
 }
 
 func ReadBuckets(uids []int64, metric string, aTypes []int64, start_ts int64, end_ts int64) QueryResponse {
-	psdcontext.Ctx.RedisPool = NewRedisPool(":6379")
-	//r := psdcontext.Ctx.RedisPool.Get()
 
 	qr := QueryResponse{}
 	qr.UserToSum = make(map[string]int64)
-	qr.UserToSum["327"] = 2342342
-	qr.UserToSum["1"] = 12342342
 
 	for _, uid := range uids {
 		buckets := bucketsForRange(uid, start_ts, end_ts)
-		fmt.Println("hi ", uid, buckets)
+		qr.UserToSum[strconv.FormatInt(uid, 10)] = sumFromRedis(buckets)
 	}
 	return qr
 }
@@ -72,12 +69,12 @@ func day_buckets_before_full_days(uid int64, from time.Time) []string {
 }
 
 func full_day_buckets() []string {
-	temp := []string{"test1", "Test2"}
+	temp := []string{}
 	return temp
 }
 
 func day_buckets_after_full_days() []string {
-	temp := []string{"test2", "Test2"}
+	temp := []string{}
 	return temp
 }
 
@@ -87,4 +84,26 @@ func makeKey(uid int64, bucket string) string {
 	flavor := "steps"
 	key = key + strconv.FormatInt(uid, 10) + ":" + strAType + ":" + flavor + ":" + bucket
 	return key
+}
+
+func sumFromRedis(buckets []string) int64 {
+	psdcontext.Ctx.RedisPool = NewRedisPool(":6379")
+	r := psdcontext.Ctx.RedisPool.Get()
+
+	for _, b := range buckets {
+		r.Send("GET", b)
+	}
+	r.Flush()
+	var sum int64
+	sum = 0
+	for _, _ = range buckets {
+		v, err := redis.Int(r.Receive())
+		if err != nil && err.Error() != "redigo: nil returned" {
+			fmt.Println(err)
+		}
+		sum += int64(v)
+	}
+
+	r.Close()
+	return sum
 }
