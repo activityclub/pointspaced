@@ -27,7 +27,7 @@ func Query(c *gin.Context) {
 		uids = append(uids, j)
 	}
 
-	var atypes = []int64{0}
+	var atypes = []int64{}
 	for _, i := range strings.Split(activity_types, ",") {
 		j, _ := strconv.ParseInt(i, 10, 64)
 		atypes = append(atypes, j)
