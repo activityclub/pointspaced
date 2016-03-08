@@ -3,6 +3,7 @@ package persistence
 import (
 	"fmt"
 	"pointspaced/psdcontext"
+	"time"
 )
 
 type QueryResponse struct {
@@ -11,8 +12,7 @@ type QueryResponse struct {
 
 func ReadBuckets(uids []int64, metric string, aTypes []int64, start_ts int64, end_ts int64) QueryResponse {
 	psdcontext.Ctx.RedisPool = NewRedisPool(":6379")
-	r := psdcontext.Ctx.RedisPool.Get()
-	fmt.Println("hi ", r)
+	//r := psdcontext.Ctx.RedisPool.Get()
 
 	qr := QueryResponse{}
 	qr.UserToSum = make(map[string]int64)
@@ -21,6 +21,7 @@ func ReadBuckets(uids []int64, metric string, aTypes []int64, start_ts int64, en
 
 	buckets := bucketsForRange(start_ts, end_ts)
 
+	fmt.Println("hi ", buckets)
 	return qr
 }
 
@@ -35,12 +36,19 @@ func bucket_with_hour(t time.Time, hour int) string {
 }
 
 func bucketsForRange(start_ts int64, end_ts int64) []string {
+	list := make([]string, 0)
 
-	list1 := day_buckets_before_full_days()
-	list2 := full_day_buckets()
-	list3 := day_buckets_after_full_days()
+	for _, b := range day_buckets_before_full_days() {
+		list = append(list, b)
+	}
+	for _, b := range full_day_buckets() {
+		list = append(list, b)
+	}
+	for _, b := range day_buckets_after_full_days() {
+		list = append(list, b)
+	}
 
-	return append(append(list1, list2), list3)
+	return list
 }
 
 func day_buckets_before_full_days() []string {
@@ -49,7 +57,11 @@ func day_buckets_before_full_days() []string {
 }
 
 func full_day_buckets() []string {
+	temp := []string{"test1", "Test2"}
+	return temp
 }
 
 func day_buckets_after_full_days() []string {
+	temp := []string{"test2", "Test2"}
+	return temp
 }
