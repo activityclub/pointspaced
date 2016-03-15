@@ -21,20 +21,47 @@ func (self RedisSimple) ReadBuckets(uids []int64, metric string, aTypes []int64,
 	qr.UserToSum = make(map[string]int64)
 
 	buckets := bucketsForRange(start_ts, end_ts)
-	if debug == "1" {
-		qr.Debug = buckets
-	}
-	for _, uid := range uids {
-		sum := int64(0)
-		for _, atype := range aTypes {
-			sum += sumFromRedis(buckets, uid, atype, metric)
+	fmt.Println(buckets)
+
+	/*
+		if debug == "1" {
+			qr.Debug = buckets
 		}
-		qr.UserToSum[strconv.FormatInt(uid, 10)] = sum
-	}
+		for _, uid := range uids {
+			sum := int64(0)
+			for _, atype := range aTypes {
+				sum += sumFromRedis(buckets, uid, atype, metric)
+			}
+			qr.UserToSum[strconv.FormatInt(uid, 10)] = sum
+		}*/
 
 	return qr
 }
 
+func bucketsForRange(start_ts, end_ts int64) []string {
+	list := make([]string, 0)
+	hash := make(map[string]bool)
+
+	from := time.Unix(start_ts, 0)
+	//to := time.Unix(end_ts, 0)
+
+	sec := from.Second()
+	for {
+		if sec > 59 {
+			break
+		}
+		bucket := bucket_for_min(from)
+		hash[bucket] = true
+		sec += 1
+		from = from.Add(time.Second)
+	}
+
+	for k := range hash {
+		list = append(list, k)
+	}
+
+	return list
+}
 func bucket_for_day(t time.Time) string {
 	format := t.Format("20060102")
 	return fmt.Sprintf("%s", format)
@@ -50,7 +77,7 @@ func bucket_for_min(t time.Time) string {
 	return fmt.Sprintf("%s", format)
 }
 
-func bucketsForRange(start_ts, end_ts int64) []string {
+func bucketsForRange2(start_ts, end_ts int64) []string {
 	list := make([]string, 0)
 
 	simple := SimpleSum{}
