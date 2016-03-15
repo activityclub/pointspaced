@@ -30,17 +30,18 @@ func (self RedisSimple) ReadBuckets(uids []int64, metric string, aTypes []int64,
 		for _, uid := range uids {
 			sum := int64(0)
 			for _, atype := range aTypes {
-				sum += sumFromRedis(buckets, uid, atype, metric)
+				sum += sumFromRedisMinBucket(bucket, uid, atype, metric, from_sec, to_sec)
 			}
 			qr.UserToSum[strconv.FormatInt(uid, 10)] = sum
-		}*/
+		} */
 
 	return qr
 }
 
-func bucketsForRange(start_ts, end_ts int64) []string {
-	list := make([]string, 0)
-	hash := make(map[string]bool)
+func bucketsForRange(start_ts, end_ts int64) map[string][]int {
+	min_hash := make(map[string]int)
+	max_hash := make(map[string]int)
+	final_hash := make(map[string][]int)
 
 	from := time.Unix(start_ts, 0)
 	to := time.Unix(end_ts, 0)
@@ -50,15 +51,20 @@ func bucketsForRange(start_ts, end_ts int64) []string {
 			break
 		}
 		bucket := bucket_for_min(from)
-		hash[bucket] = true
+		if min_hash[bucket] == 0 {
+			min_hash[bucket] = from.Second()
+		}
+		max_hash[bucket] = from.Second()
 		from = from.Add(time.Second)
 	}
 
-	for k := range hash {
-		list = append(list, k)
+	for key := range min_hash {
+		min := min_hash[key]
+		max := max_hash[key]
+		final_hash[key] = []int{min, max}
 	}
 
-	return list
+	return final_hash
 }
 func bucket_for_day(t time.Time) string {
 	format := t.Format("20060102")
