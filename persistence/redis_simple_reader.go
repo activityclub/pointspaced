@@ -23,17 +23,16 @@ func (self RedisSimple) ReadBuckets(uids []int64, metric string, aTypes []int64,
 	buckets := bucketsForRange(start_ts, end_ts)
 	fmt.Println(buckets)
 
-	/*
-		if debug == "1" {
-			qr.Debug = buckets
+	if debug == "1" {
+		//qr.Debug = buckets
+	}
+	for _, uid := range uids {
+		sum := int64(0)
+		for _, atype := range aTypes {
+			sum += sumFromRedisMinBuckets(buckets, uid, atype, metric)
 		}
-		for _, uid := range uids {
-			sum := int64(0)
-			for _, atype := range aTypes {
-				sum += sumFromRedisMinBucket(bucket, uid, atype, metric, from_sec, to_sec)
-			}
-			qr.UserToSum[strconv.FormatInt(uid, 10)] = sum
-		} */
+		qr.UserToSum[strconv.FormatInt(uid, 10)] = sum
+	}
 
 	return qr
 }
@@ -153,23 +152,30 @@ func makeKey(uid, atype int64, bucket, metric string) string {
 	return key
 }
 
-func sumFromRedis(buckets []string, uid, atype int64, metric string) int64 {
+func sumFromRedisMinBuckets(buckets map[string][]int, uid, atype, int64, metric string) int64 {
 	r := psdcontext.Ctx.RedisPool.Get()
-
-	for _, b := range buckets {
-		r.Send("GET", makeKey(uid, atype, b, metric))
+	for key := range buckets {
+		r.Send("ZRANGE", makeKey(uid, atype, key, metric), "0", "-1", "WITHSCORES")
+		val := buckets[key]
+		min := val[0]
+		max := val[1]
 	}
 	r.Flush()
 	var sum int64
 	sum = 0
-	for _, _ = range buckets {
+	for key := range buckets {
 		v, err := redis.Int(r.Receive())
+		fmt.Println(v)
+		if err != nil && err.Error() != "redigo: nil returned" {
+			fmt.Println(err)
+		}
+		v, err = redis.Int(r.Receive())
+		fmt.Println(v)
 		if err != nil && err.Error() != "redigo: nil returned" {
 			fmt.Println(err)
 		}
 		sum += int64(v)
 	}
-
 	r.Close()
 	return sum
 }
