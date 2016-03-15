@@ -45,6 +45,11 @@ func bucket_with_hour(t time.Time, hour int) string {
 	return fmt.Sprintf("%s%02d", format, hour)
 }
 
+func bucket_for_min(t time.Time) string {
+	format := t.Format("200601021504")
+	return fmt.Sprintf("%s", format)
+}
+
 func bucketsForRange(start_ts, end_ts int64) []string {
 	list := make([]string, 0)
 
