@@ -35,11 +35,14 @@ type MetricManager struct {
 	MetricRW
 }
 
-func NewMetricManager() *MetricManager {
+func NewMetricManagerSimple() *MetricManager {
 	mm := MetricManager{}
-
-	// TODO make configurable?
 	mm.MetricRW = RedisSimple{}
+	return &mm
+}
 
+func NewMetricManagerMZ() *MetricManager {
+	mm := MetricManager{}
+	mm.MetricRW = RedisMZ{}
 	return &mm
 }
