@@ -43,16 +43,14 @@ func bucketsForRange(start_ts, end_ts int64) []string {
 	hash := make(map[string]bool)
 
 	from := time.Unix(start_ts, 0)
-	//to := time.Unix(end_ts, 0)
+	to := time.Unix(end_ts, 0)
 
-	sec := from.Second()
 	for {
-		if sec > 59 {
+		if from.Unix() > to.Unix() {
 			break
 		}
 		bucket := bucket_for_min(from)
 		hash[bucket] = true
-		sec += 1
 		from = from.Add(time.Second)
 	}
 

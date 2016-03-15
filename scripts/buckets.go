@@ -20,7 +20,7 @@ func main() {
 	mm := persistence.NewMetricManager()
 	uids := []int64{327}
 	atypes := []int64{0}
-	qr := mm.ReadBuckets(uids, "points", atypes, 1454693071, 1454693075, "1")
+	qr := mm.ReadBuckets(uids, "points", atypes, 1454693071, 1454693071+60, "1")
 	fmt.Println(qr)
 }
 
