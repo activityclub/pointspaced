@@ -1,4 +1,5 @@
 *.swp
+buckets
 .DS_Store
 pointspaced
 vendor
