@@ -10,7 +10,7 @@ import "pointspaced/persistence"
 
 func main2() {
 	psdcontext.Ctx.RedisPool = persistence.NewRedisPool(":6379")
-	mm := persistence.NewMetricManager()
+	mm := persistence.NewMetricManagerSimple()
 	uids := []int64{327}
 	atypes := []int64{0}
 

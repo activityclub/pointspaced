@@ -59,15 +59,15 @@ func NewRedisACRRequest(bucket string, granularity string, scoremin int, scorema
 
 func (self RedisACR) ReadBuckets(uids []int64, metric string, aTypes []int64, start_ts int64, end_ts int64, debug string) QueryResponse {
 
-	fmt.Println("[Read] START", start_ts, "END", end_ts)
+	fmt.Println("[Accordion] START", start_ts, "END", end_ts)
 	requests := self.requestsForRange(start_ts, end_ts)
-	fmt.Println("[Read] Requests:", requests)
+	fmt.Println("[Accordion] Requests:", requests)
 
 	r := psdcontext.Ctx.RedisPool.Get()
 
 	sum := int64(0)
 	for _, request := range requests {
-		key := "psd:"
+		key := "acr:"
 		key = key + "1" + ":" + "0" + ":" + metric + ":" + request.TimeBucket
 		r.Send("ZRANGE", key, 0, -1, "WITHSCORES")
 	}
@@ -119,7 +119,7 @@ func (self *RedisACR) requestsForRange(start_ts int64, end_ts int64) []RedisACRR
 	reqs := []RedisACRRequest{}
 	cursor := NewRedisACRCursor(from, to)
 
-	fmt.Println("[Read] requestsForRange FROM", from, "TO", to)
+	fmt.Println("[Accordion] requestsForRange FROM", from, "TO", to)
 
 	tmp := map[string]RedisACRRequest{}
 
@@ -332,7 +332,7 @@ func (self RedisACR) WritePoint(flavor string, userId int64, value int64, activi
 
 				strAType := strconv.FormatInt(aType, 10)
 
-				key := "psd:"
+				key := "acr:"
 				key = key + strUserId + ":" + strAType + ":" + flavor + ":" + bucket
 
 				//				fmt.Println("\t\t=>", bucket, "ZINCRBY", key, set_timestamp, value)

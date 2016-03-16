@@ -1,8 +1,6 @@
-hash: 05e15619db610f38f657213e98fcf543907b502a943a5e371f1731842ed5fd84
-updated: 2016-03-02T13:21:03.567507-08:00
+hash: 2633d422b0fbbb5dd714bf13130f522de970ded2d4b9b716c7c919d13159947e
+updated: 2016-03-15T23:07:22.476860906-07:00
 imports:
-- name: github.com/alecthomas/binary
-  version: 8b2a3aa0ba1c1e495274f8e63f57dc7f76107753
 - name: github.com/bitly/go-nsq
   version: 0b80d6f05e15ca1930e0c5e1d540ed627e299980
   vcs: git
@@ -16,8 +14,6 @@ imports:
   version: 5215b55f46b2b919f50a1df0eaa5886afe4e3b3d
   subpackages:
   - spew
-- name: github.com/donnpebe/go-redis-timeseries
-  version: c4fd4746f231d32dc64043d47f731892de0f651d
 - name: github.com/garyburd/redigo
   version: 55d64223b60ff7c6a7f1c391f611038a88a86b01
   vcs: git
