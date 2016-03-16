@@ -32,6 +32,12 @@ func (self RedisSimple) ReadBuckets(uids []int64, metric string, aTypes []int64,
 		fmt.Println(full_days)
 		fmt.Println(before, after)
 	}
+	/*
+		if hours > 0.0 {
+			before, full_hours, after := splitHours(start_ts, end_ts)
+			fmt.Println(full_hours)
+			fmt.Println(before, after)
+		}*/
 
 	buckets := bucketsForRange(start_ts, end_ts)
 	//fmt.Println(buckets)
@@ -64,6 +70,20 @@ func splitDays(start_ts, end_ts int64) (before int64, buckets []string, after in
 	to := time.Unix(end_ts, 0)
 	buckets = make([]string, 0)
 
+	startDay := from.Day()
+
+	for {
+		if from.Day() > startDay {
+			break
+		}
+		from = from.Add(time.Hour)
+	}
+
+	// this are the seconds before 1st full day
+	before = int64((from.Minute() * 60) + from.Second())
+	// make from full day at 00:00
+	from = time.Unix(from.Unix()-before, 0)
+
 	for {
 		if from.Unix() > to.Unix() {
 			break
@@ -72,6 +92,8 @@ func splitDays(start_ts, end_ts int64) (before int64, buckets []string, after in
 		buckets = append(buckets, bucket)
 		from = from.Add(time.Hour * 24)
 	}
+	// chop last day
+	buckets = buckets[0 : len(buckets)-1]
 
 	return
 }
