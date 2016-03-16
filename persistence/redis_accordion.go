@@ -21,7 +21,7 @@ type RedisACRRequest struct {
 
 func (self *RedisACRRequest) QueryMin() int64 {
 	s := strconv.Itoa(self.ScoreMin)
-	f := ""
+	var f string
 	if len(s) == 1 {
 		f = self.TimeBucket + "0" + s
 	} else {
@@ -36,7 +36,7 @@ func (self *RedisACRRequest) QueryMin() int64 {
 
 func (self *RedisACRRequest) QueryMax() int64 {
 	s := strconv.Itoa(self.ScoreMax)
-	f := ""
+	var f string
 	if len(s) == 1 {
 		f = self.TimeBucket + "0" + s
 	} else {
@@ -66,29 +66,32 @@ func (self RedisACR) ReadBuckets(uids []int64, metric string, aTypes []int64, st
 
 	r := psdcontext.Ctx.RedisPool.Get()
 
+	keys := []string{}
+	for k, _ := range requests {
+		keys = append(keys, k)
+	}
+	//	sort.Strings(keys)
+
 	sum := int64(0)
-	for _, request := range requests {
-		key := "acr:"
-		key = key + "1" + ":" + "0" + ":" + metric + ":" + request.TimeBucket
+	for _, k := range keys {
+		request := requests[k]
+		key := "acr:" + "1" + ":" + "0" + ":" + metric + ":" + request.TimeBucket
 		r.Send("ZRANGE", key, 0, -1, "WITHSCORES")
 	}
 
 	// trigger pipelined call
 	r.Flush()
 
-	for _, request := range requests {
+	for _, k := range keys {
+		request := requests[k]
+
 		response, err := redis.Values(r.Receive())
 		if err != nil {
 			panic(err) // TODO
 		}
+
 		for idx, vx := range response {
 			if idx%2 == 1 {
-				strval := string(vx.([]uint8))
-
-				intval, err := strconv.ParseInt(strval, 10, 64)
-				if err != nil {
-					panic(err)
-				}
 
 				myts, err := strconv.ParseInt(string(response[idx-1].([]uint8)), 10, 64)
 				if err != nil {
@@ -96,7 +99,14 @@ func (self RedisACR) ReadBuckets(uids []int64, metric string, aTypes []int64, st
 				}
 
 				if myts >= request.QueryMin() && myts <= request.QueryMax() {
+					intval, err := strconv.ParseInt(string(vx.([]uint8)), 10, 64)
+					if err != nil {
+						panic(err)
+					}
 					sum += intval
+					//fmt.Println("ACCEPT!", myts, intval, request.QueryMin(), request.QueryMax())
+				} else {
+					//fmt.Println("REJECT!", myts, intval, request.QueryMin(), request.QueryMax())
 				}
 			}
 		}
@@ -110,16 +120,15 @@ func (self RedisACR) ReadBuckets(uids []int64, metric string, aTypes []int64, st
 	return qr
 }
 
-func (self *RedisACR) requestsForRange(start_ts int64, end_ts int64) []RedisACRRequest {
+func (self *RedisACR) requestsForRange(start_ts int64, end_ts int64) map[string]RedisACRRequest {
 	from := time.Unix(start_ts, 0).UTC()
 	to := time.Unix(end_ts, 0).UTC()
 
-	reqs := []RedisACRRequest{}
 	cursor := NewRedisACRCursor(from, to)
 
 	//	fmt.Println("[Accordion] requestsForRange FROM", from, "TO", to)
 
-	tmp := map[string]RedisACRRequest{}
+	reqs := map[string]RedisACRRequest{}
 
 	// OK our goal is to iterate chunk
 	// by chunk using our cursor
@@ -137,12 +146,12 @@ func (self *RedisACR) requestsForRange(start_ts int64, end_ts int64) []RedisACRR
 		}
 
 		if cursor.CanJumpYear() {
-			tmp[cursor.YearKey()] = NewRedisACRRequest(cursor.YearKey(), "year", 1, 12)
+			reqs[cursor.YearKey()] = NewRedisACRRequest(cursor.YearKey(), "year", 1, 12)
 			cursor.JumpYear()
 
 		} else if cursor.CanJumpMonth() {
 
-			entry, exists := tmp[cursor.YearKey()]
+			entry, exists := reqs[cursor.YearKey()]
 			if exists {
 				if entry.ScoreMin > cursor.Month() {
 					entry.ScoreMin = cursor.Month()
@@ -150,15 +159,15 @@ func (self *RedisACR) requestsForRange(start_ts int64, end_ts int64) []RedisACRR
 				if entry.ScoreMax < cursor.Month() {
 					entry.ScoreMax = cursor.Month()
 				}
-				tmp[cursor.YearKey()] = entry
+				reqs[cursor.YearKey()] = entry
 			} else {
-				tmp[cursor.YearKey()] = NewRedisACRRequest(cursor.YearKey(), "month", cursor.Month(), cursor.Month())
+				reqs[cursor.YearKey()] = NewRedisACRRequest(cursor.YearKey(), "month", cursor.Month(), cursor.Month())
 			}
 			cursor.JumpMonth()
 
 		} else if cursor.CanJumpDay() {
 
-			entry, exists := tmp[cursor.MonthKey()]
+			entry, exists := reqs[cursor.MonthKey()]
 			if exists {
 				if entry.ScoreMin > cursor.Day() {
 					entry.ScoreMin = cursor.Day()
@@ -166,16 +175,16 @@ func (self *RedisACR) requestsForRange(start_ts int64, end_ts int64) []RedisACRR
 				if entry.ScoreMax < cursor.Day() {
 					entry.ScoreMax = cursor.Day()
 				}
-				tmp[cursor.MonthKey()] = entry
+				reqs[cursor.MonthKey()] = entry
 			} else {
-				tmp[cursor.MonthKey()] = NewRedisACRRequest(cursor.MonthKey(), "day", cursor.Day(), cursor.Day())
+				reqs[cursor.MonthKey()] = NewRedisACRRequest(cursor.MonthKey(), "day", cursor.Day(), cursor.Day())
 			}
 
 			cursor.JumpDay()
 
 		} else if cursor.CanJumpHour() {
 
-			entry, exists := tmp[cursor.DayKey()]
+			entry, exists := reqs[cursor.DayKey()]
 			if exists {
 				if entry.ScoreMin > cursor.Hour() {
 					entry.ScoreMin = cursor.Hour()
@@ -183,16 +192,16 @@ func (self *RedisACR) requestsForRange(start_ts int64, end_ts int64) []RedisACRR
 				if entry.ScoreMax < cursor.Hour() {
 					entry.ScoreMax = cursor.Hour()
 				}
-				tmp[cursor.DayKey()] = entry
+				reqs[cursor.DayKey()] = entry
 			} else {
-				tmp[cursor.DayKey()] = NewRedisACRRequest(cursor.DayKey(), "hour", cursor.Hour(), cursor.Hour())
+				reqs[cursor.DayKey()] = NewRedisACRRequest(cursor.DayKey(), "hour", cursor.Hour(), cursor.Hour())
 			}
 
 			cursor.JumpHour()
 
 		} else if cursor.CanJumpMinute() {
 
-			entry, exists := tmp[cursor.HourKey()]
+			entry, exists := reqs[cursor.HourKey()]
 			if exists {
 				if entry.ScoreMin > cursor.Minute() {
 					entry.ScoreMin = cursor.Minute()
@@ -200,15 +209,15 @@ func (self *RedisACR) requestsForRange(start_ts int64, end_ts int64) []RedisACRR
 				if entry.ScoreMax < cursor.Minute() {
 					entry.ScoreMax = cursor.Minute()
 				}
-				tmp[cursor.HourKey()] = entry
+				reqs[cursor.HourKey()] = entry
 			} else {
-				tmp[cursor.HourKey()] = NewRedisACRRequest(cursor.HourKey(), "minute", cursor.Minute(), cursor.Minute())
+				reqs[cursor.HourKey()] = NewRedisACRRequest(cursor.HourKey(), "minute", cursor.Minute(), cursor.Minute())
 			}
 			cursor.JumpMinute()
 
 		} else if cursor.CanJumpSecond() {
 
-			entry, exists := tmp[cursor.MinuteKey()]
+			entry, exists := reqs[cursor.MinuteKey()]
 			if exists {
 				if entry.ScoreMin > cursor.Second() {
 					entry.ScoreMin = cursor.Second()
@@ -216,14 +225,14 @@ func (self *RedisACR) requestsForRange(start_ts int64, end_ts int64) []RedisACRR
 				if entry.ScoreMax < cursor.Second() {
 					entry.ScoreMax = cursor.Second()
 				}
-				tmp[cursor.MinuteKey()] = entry
+				reqs[cursor.MinuteKey()] = entry
 			} else {
-				tmp[cursor.MinuteKey()] = NewRedisACRRequest(cursor.MinuteKey(), "second", cursor.Second(), cursor.Second())
+				reqs[cursor.MinuteKey()] = NewRedisACRRequest(cursor.MinuteKey(), "second", cursor.Second(), cursor.Second())
 			}
 			cursor.JumpSecond()
 
 		} else {
-			entry, exists := tmp[cursor.MinuteKey()]
+			entry, exists := reqs[cursor.MinuteKey()]
 			if exists {
 				if entry.ScoreMin > cursor.Second() {
 					entry.ScoreMin = cursor.Second()
@@ -231,18 +240,13 @@ func (self *RedisACR) requestsForRange(start_ts int64, end_ts int64) []RedisACRR
 				if entry.ScoreMax < cursor.Second() {
 					entry.ScoreMax = cursor.Second()
 				}
-				tmp[cursor.MinuteKey()] = entry
+				reqs[cursor.MinuteKey()] = entry
 			} else {
-				tmp[cursor.MinuteKey()] = NewRedisACRRequest(cursor.MinuteKey(), "second", cursor.Second(), cursor.Second())
+				reqs[cursor.MinuteKey()] = NewRedisACRRequest(cursor.MinuteKey(), "second", cursor.Second(), cursor.Second())
 			}
 
 			cursor.JumpSecond()
 		}
-	}
-
-	//								t := proposed_time.Format("20060102150405")
-	for _, item := range tmp {
-		reqs = append(reqs, item)
 	}
 
 	return reqs

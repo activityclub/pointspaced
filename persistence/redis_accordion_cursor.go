@@ -3,14 +3,21 @@ package persistence
 import "time"
 
 type RedisACRCursor struct {
-	Cursor time.Time
-	To     time.Time
+	Cursor     time.Time
+	To         time.Time
+	_YearKey   string
+	_MonthKey  string
+	_DayKey    string
+	_HourKey   string
+	_MinuteKey string
+	_SecondKey string
 }
 
 func NewRedisACRCursor(from time.Time, to time.Time) RedisACRCursor {
 	c := RedisACRCursor{}
 	c.Cursor = from
 	c.To = to
+	c.updateState()
 	return c
 
 }
@@ -100,27 +107,27 @@ func (self *RedisACRCursor) CanJumpSecond() bool {
 }
 
 func (self *RedisACRCursor) YearKey() string {
-	return self.Cursor.Format("2006")
+	return self._YearKey
 }
 
 func (self *RedisACRCursor) MonthKey() string {
-	return self.Cursor.Format("200601")
+	return self._MonthKey
 }
 
 func (self *RedisACRCursor) DayKey() string {
-	return self.Cursor.Format("20060102")
+	return self._DayKey
 }
 
 func (self *RedisACRCursor) HourKey() string {
-	return self.Cursor.Format("2006010215")
+	return self._HourKey
 }
 
 func (self *RedisACRCursor) MinuteKey() string {
-	return self.Cursor.Format("200601021504")
+	return self._MinuteKey
 }
 
 func (self *RedisACRCursor) SecondKey() string {
-	return self.Cursor.Format("20060102150405")
+	return self._SecondKey
 }
 
 func (self *RedisACRCursor) Year() int {
@@ -129,6 +136,7 @@ func (self *RedisACRCursor) Year() int {
 
 func (self *RedisACRCursor) Month() int {
 	return int(self.Cursor.Month())
+
 }
 
 func (self *RedisACRCursor) Day() int {
@@ -149,24 +157,39 @@ func (self *RedisACRCursor) Second() int {
 
 func (self *RedisACRCursor) JumpYear() {
 	self.Cursor = self.Cursor.AddDate(1, 0, 0)
+	self._YearKey = self.Cursor.Format("2006")
 }
 
 func (self *RedisACRCursor) JumpMonth() {
 	self.Cursor = self.Cursor.AddDate(0, 1, 0)
+	self._MonthKey = self.Cursor.Format("200601")
 }
 
 func (self *RedisACRCursor) JumpDay() {
 	self.Cursor = self.Cursor.AddDate(0, 0, 1)
+	self._DayKey = self.Cursor.Format("20060102")
 }
 
 func (self *RedisACRCursor) JumpHour() {
 	self.Cursor = self.Cursor.Add(time.Hour)
+	self._HourKey = self.Cursor.Format("2006010215")
 }
 
 func (self *RedisACRCursor) JumpMinute() {
 	self.Cursor = self.Cursor.Add(time.Minute)
+	self._MinuteKey = self.Cursor.Format("200601021504")
 }
 
 func (self *RedisACRCursor) JumpSecond() {
 	self.Cursor = self.Cursor.Add(time.Second)
+	self._SecondKey = self.Cursor.Format("20060102150405")
+}
+
+func (self *RedisACRCursor) updateState() {
+	self._YearKey = self.Cursor.Format("2006")
+	self._MonthKey = self.Cursor.Format("200601")
+	self._DayKey = self.Cursor.Format("20060102")
+	self._HourKey = self.Cursor.Format("2006010215")
+	self._MinuteKey = self.Cursor.Format("200601021504")
+	self._SecondKey = self.Cursor.Format("20060102150405")
 }

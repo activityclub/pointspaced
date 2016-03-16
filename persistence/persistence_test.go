@@ -176,8 +176,10 @@ func testEvenLongerMultiDayValidRead(t *testing.T, mm MetricRW) {
 
 	res := mm.ReadBuckets([]int64{1}, "points", []int64{3}, 1451635200, 1458061011, "0")
 	if res.UserToSum["1"] != 322 {
+		fmt.Println("res", res)
 		t.Errorf("Incorrect Sum.  Expected 322, Received %d", res.UserToSum["1"])
 	}
+
 	res = mm.ReadBuckets([]int64{1}, "points", []int64{3}, 1451635205, 1458061010, "0")
 	if res.UserToSum["1"] != 221 {
 		t.Errorf("Incorrect Sum.  Expected 221, Received %d", res.UserToSum["1"])
