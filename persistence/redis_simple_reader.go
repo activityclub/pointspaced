@@ -27,7 +27,7 @@ func (self RedisSimple) ReadBuckets(uids []int64, metric string, aTypes []int64,
 	if days > 0.0 {
 		before, full_days, after = splitDays(start_ts, end_ts)
 		//fmt.Println(full_days)
-		//fmt.Println(before, after)
+		fmt.Println(before, after)
 	}
 
 	for _, uid := range uids {
@@ -36,6 +36,7 @@ func (self RedisSimple) ReadBuckets(uids []int64, metric string, aTypes []int64,
 			sum += sumFromRedis(full_days, uid, atype, metric)
 		}
 		qr.UserToSum[strconv.FormatInt(uid, 10)] = sum
+		fmt.Println(sum)
 	}
 
 	buckets := bucketsForRange(start_ts, start_ts+before)
@@ -46,7 +47,8 @@ func (self RedisSimple) ReadBuckets(uids []int64, metric string, aTypes []int64,
 		for _, atype := range aTypes {
 			sum += sumFromRedisMinBuckets(buckets, uid, atype, metric)
 		}
-		qr.UserToSum[strconv.FormatInt(uid, 10)] = sum
+		qr.UserToSum[strconv.FormatInt(uid, 10)] += sum
+		fmt.Println(sum)
 	}
 
 	buckets = bucketsForRange(end_ts-after, end_ts)
@@ -55,7 +57,8 @@ func (self RedisSimple) ReadBuckets(uids []int64, metric string, aTypes []int64,
 		for _, atype := range aTypes {
 			sum += sumFromRedisMinBuckets(buckets, uid, atype, metric)
 		}
-		qr.UserToSum[strconv.FormatInt(uid, 10)] = sum
+		qr.UserToSum[strconv.FormatInt(uid, 10)] += sum
+		fmt.Println(sum)
 	}
 
 	return qr
@@ -164,7 +167,7 @@ func bucket_for_day(t time.Time) string {
 }
 
 func bucket_for_hour(t time.Time) string {
-	format := t.Format("20060102")
+	format := t.Format("2006010215")
 	return fmt.Sprintf("%s", format)
 }
 
