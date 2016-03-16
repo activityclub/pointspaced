@@ -84,7 +84,7 @@ func splitDays(start_ts, end_ts int64) (before int64, buckets []string, after in
 	// this are the seconds before 1st full day
 	before = int64((hourCount * 3600) + (from.Minute() * 60) + from.Second())
 	// make from full day at 00:00
-	from = time.Unix(from.Unix()-before, 0)
+	from = time.Unix(from.Unix()-int64((from.Minute()*60)-from.Second()), 0)
 
 	endDay := to.Day()
 
