@@ -27,31 +27,42 @@ func (self RedisSimple) ReadBuckets(uids []int64, metric string, aTypes []int64,
 	fmt.Println("days ", days)
 	fmt.Println("months ", months)
 
+	var full_days []string
+	var before, after int64
 	if days > 0.0 {
-		before, full_days, after := splitDays(start_ts, end_ts)
+		before, full_days, after = splitDays(start_ts, end_ts)
 		fmt.Println(full_days)
 		fmt.Println(before, after)
 	}
-	/*
-		if hours > 0.0 {
-			before, full_hours, after := splitHours(start_ts, end_ts)
-			fmt.Println(full_hours)
-			fmt.Println(before, after)
-		}*/
 
-	buckets := bucketsForRange(start_ts, end_ts)
-	//fmt.Println(buckets)
-
-	if debug == "1" {
-		//qr.Debug = nil
-	}
 	for _, uid := range uids {
 		sum := int64(0)
 		for _, atype := range aTypes {
-			sum += sumFromRedisMinBuckets(buckets, uid, atype, metric)
+			sum += sumFromRedis(full_days, uid, atype, metric)
 		}
 		qr.UserToSum[strconv.FormatInt(uid, 10)] = sum
 	}
+	/*
+			if hours > 0.0 {
+				before, full_hours, after := splitHours(start_ts, end_ts)
+				fmt.Println(full_hours)
+				fmt.Println(before, after)
+			}
+
+		buckets := bucketsForRange(start_ts, end_ts)
+		//fmt.Println(buckets)
+
+		if debug == "1" {
+			//qr.Debug = nil
+		}
+		for _, uid := range uids {
+			sum := int64(0)
+			for _, atype := range aTypes {
+				sum += sumFromRedisMinBuckets(buckets, uid, atype, metric)
+			}
+			qr.UserToSum[strconv.FormatInt(uid, 10)] = sum
+		}
+	*/
 
 	return qr
 }
@@ -269,6 +280,27 @@ func sumFromRedisMinBuckets(buckets map[string][]int, uid, atype int64, metric s
 			}
 		}
 	}
+	r.Close()
+	return sum
+}
+
+func sumFromRedis(buckets []string, uid, atype int64, metric string) int64 {
+	r := psdcontext.Ctx.RedisPool.Get()
+
+	for _, b := range buckets {
+		r.Send("GET", makeKey(uid, atype, b, metric))
+	}
+	r.Flush()
+	var sum int64
+	sum = 0
+	for _, _ = range buckets {
+		v, err := redis.Int(r.Receive())
+		if err != nil && err.Error() != "redigo: nil returned" {
+			fmt.Println(err)
+		}
+		sum += int64(v)
+	}
+
 	r.Close()
 	return sum
 }
