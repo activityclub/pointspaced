@@ -24,7 +24,6 @@ func (self RedisSimple) ReadBuckets(uids []int64, metric string, aTypes []int64,
 
 	buckets := bucketsForRange(start_ts, end_ts)
 	fmt.Println(buckets)
-	fmt.Println("111123")
 
 	if debug == "1" {
 		//qr.Debug = buckets
@@ -37,6 +36,7 @@ func (self RedisSimple) ReadBuckets(uids []int64, metric string, aTypes []int64,
 		qr.UserToSum[strconv.FormatInt(uid, 10)] = sum
 	}
 
+	fmt.Println("qr ", qr)
 	return qr
 }
 
@@ -53,7 +53,17 @@ func bucketsForRange(start_ts, end_ts int64) map[string][]int {
 			break
 		}
 		bucket := bucket_for_min(from)
-		if min_hash[bucket] == 0 {
+		min_hash[bucket] = -1
+		from = from.Add(time.Second)
+	}
+
+	from = time.Unix(start_ts, 0)
+	for {
+		if from.Unix() > to.Unix() {
+			break
+		}
+		bucket := bucket_for_min(from)
+		if min_hash[bucket] == -1 {
 			min_hash[bucket] = from.Second()
 		}
 		max_hash[bucket] = from.Second()
@@ -62,6 +72,9 @@ func bucketsForRange(start_ts, end_ts int64) map[string][]int {
 
 	for key := range min_hash {
 		min := min_hash[key]
+		if min == -1 {
+			min = 0
+		}
 		max := max_hash[key]
 		final_hash[key] = []int{min, max}
 	}
