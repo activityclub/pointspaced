@@ -9,6 +9,16 @@ import "pointspaced/worker"
 import "pointspaced/persistence"
 
 func main() {
+	psdcontext.Ctx.RedisPool = persistence.NewRedisPool(":6379")
+	mm := persistence.NewMetricManager()
+	uids := []int64{327}
+	atypes := []int64{0}
+
+	qr := mm.ReadBuckets(uids, "points", atypes, 1454693071, 1454693071+60, "1")
+	fmt.Println(qr)
+}
+
+func main2() {
 	app := cli.NewApp()
 	app.Name = "pointspaced"
 	app.Usage = "yo dawg i heard you like points"

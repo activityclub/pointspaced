@@ -2,7 +2,7 @@ package persistence
 
 import (
 	"fmt"
-	"github.com/garyburd/redigo/redis"
+	//"github.com/garyburd/redigo/redis"
 	"pointspaced/psdcontext"
 	"strconv"
 	"time"
@@ -17,11 +17,14 @@ type RedisSimple struct {
 
 func (self RedisSimple) ReadBuckets(uids []int64, metric string, aTypes []int64, start_ts int64, end_ts int64, debug string) QueryResponse {
 
+	fmt.Println("1111")
 	qr := QueryResponse{}
 	qr.UserToSum = make(map[string]int64)
+	fmt.Println("11112")
 
 	buckets := bucketsForRange(start_ts, end_ts)
 	fmt.Println(buckets)
+	fmt.Println("111123")
 
 	if debug == "1" {
 		//qr.Debug = buckets
@@ -166,17 +169,17 @@ func sumFromRedisMinBuckets(buckets map[string][]int, uid, atype int64, metric s
 		max := val[1]
 		fmt.Println(min, max)
 
-		v, err := redis.Int(r.Receive())
+		v, err := r.Receive()
 		fmt.Println(v)
 		if err != nil && err.Error() != "redigo: nil returned" {
 			fmt.Println(err)
 		}
-		v, err = redis.Int(r.Receive())
+		v, err = r.Receive()
 		fmt.Println(v)
 		if err != nil && err.Error() != "redigo: nil returned" {
 			fmt.Println(err)
 		}
-		sum += int64(v)
+		sum += int64(0)
 	}
 	r.Close()
 	return sum
