@@ -20,45 +20,50 @@ func (self RedisSimple) ReadBuckets(uids []int64, metric string, aTypes []int64,
 	qr := QueryResponse{}
 	qr.UserToSum = make(map[string]int64)
 
-	_, _, _, days, _ := deltasForRange(start_ts, end_ts)
+	secs, _, _, days, _ := deltasForRange(start_ts, end_ts)
 
 	var full_days []string
 	var before, after int64
-	if days > 0.0 {
+	if days > 0.0 && secs > 3600 {
 		before, full_days, after = splitDays(start_ts, end_ts)
 		//fmt.Println(full_days)
 		fmt.Println(before, after)
-	}
-
-	for _, uid := range uids {
-		sum := int64(0)
-		for _, atype := range aTypes {
-			sum += sumFromRedis(full_days, uid, atype, metric)
+		for _, uid := range uids {
+			sum := int64(0)
+			for _, atype := range aTypes {
+				sum += sumFromRedis(full_days, uid, atype, metric)
+			}
+			qr.UserToSum[strconv.FormatInt(uid, 10)] = sum
 		}
-		qr.UserToSum[strconv.FormatInt(uid, 10)] = sum
-		fmt.Println(sum)
-	}
+		buckets := bucketsForRange(start_ts, start_ts+before)
+		//fmt.Println(buckets)
 
-	buckets := bucketsForRange(start_ts, start_ts+before)
-	//fmt.Println(buckets)
-
-	for _, uid := range uids {
-		sum := int64(0)
-		for _, atype := range aTypes {
-			sum += sumFromRedisMinBuckets(buckets, uid, atype, metric)
+		for _, uid := range uids {
+			sum := int64(0)
+			for _, atype := range aTypes {
+				sum += sumFromRedisMinBuckets(buckets, uid, atype, metric)
+			}
+			qr.UserToSum[strconv.FormatInt(uid, 10)] += sum
 		}
-		qr.UserToSum[strconv.FormatInt(uid, 10)] += sum
-		fmt.Println(sum)
-	}
 
-	buckets = bucketsForRange(end_ts-after, end_ts)
-	for _, uid := range uids {
-		sum := int64(0)
-		for _, atype := range aTypes {
-			sum += sumFromRedisMinBuckets(buckets, uid, atype, metric)
+		buckets = bucketsForRange(end_ts-after, end_ts)
+		for _, uid := range uids {
+			sum := int64(0)
+			for _, atype := range aTypes {
+				sum += sumFromRedisMinBuckets(buckets, uid, atype, metric)
+			}
+			qr.UserToSum[strconv.FormatInt(uid, 10)] += sum
 		}
-		qr.UserToSum[strconv.FormatInt(uid, 10)] += sum
-		fmt.Println(sum)
+	} else {
+		buckets := bucketsForRange(start_ts, end_ts)
+
+		for _, uid := range uids {
+			sum := int64(0)
+			for _, atype := range aTypes {
+				sum += sumFromRedisMinBuckets(buckets, uid, atype, metric)
+			}
+			qr.UserToSum[strconv.FormatInt(uid, 10)] = sum
+		}
 	}
 
 	return qr
