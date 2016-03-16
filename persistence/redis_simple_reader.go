@@ -2,7 +2,7 @@ package persistence
 
 import (
 	"fmt"
-	//"github.com/garyburd/redigo/redis"
+	"github.com/garyburd/redigo/redis"
 	"pointspaced/psdcontext"
 	"strconv"
 	"time"
@@ -169,12 +169,12 @@ func sumFromRedisMinBuckets(buckets map[string][]int, uid, atype int64, metric s
 		max := val[1]
 		fmt.Println(min, max)
 
-		v, err := r.Receive()
+		v, err := redis.IntMap(r.Receive())
 		fmt.Println(v)
 		if err != nil && err.Error() != "redigo: nil returned" {
 			fmt.Println(err)
 		}
-		v, err = r.Receive()
+		v, err = redis.IntMap(r.Receive())
 		fmt.Println(v)
 		if err != nil && err.Error() != "redigo: nil returned" {
 			fmt.Println(err)
