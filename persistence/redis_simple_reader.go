@@ -42,27 +42,18 @@ func (self RedisSimple) ReadBuckets(uids []int64, metric string, aTypes []int64,
 		}
 		qr.UserToSum[strconv.FormatInt(uid, 10)] = sum
 	}
-	/*
-			if hours > 0.0 {
-				before, full_hours, after := splitHours(start_ts, end_ts)
-				fmt.Println(full_hours)
-				fmt.Println(before, after)
-			}
 
-		buckets := bucketsForRange(start_ts, end_ts)
-		//fmt.Println(buckets)
+	buckets := bucketsForRange(start_ts, start_ts+before)
+	buckets = append(buckets, bucketsForRange(end_ts-after, end_ts))
+	//fmt.Println(buckets)
 
-		if debug == "1" {
-			//qr.Debug = nil
+	for _, uid := range uids {
+		sum := int64(0)
+		for _, atype := range aTypes {
+			sum += sumFromRedisMinBuckets(buckets, uid, atype, metric)
 		}
-		for _, uid := range uids {
-			sum := int64(0)
-			for _, atype := range aTypes {
-				sum += sumFromRedisMinBuckets(buckets, uid, atype, metric)
-			}
-			qr.UserToSum[strconv.FormatInt(uid, 10)] = sum
-		}
-	*/
+		qr.UserToSum[strconv.FormatInt(uid, 10)] = sum
+	}
 
 	return qr
 }
