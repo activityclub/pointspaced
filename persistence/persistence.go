@@ -41,8 +41,8 @@ func NewMetricManagerSimple() *MetricManager {
 	return &mm
 }
 
-func NewMetricManagerMZ() *MetricManager {
+func NewMetricManagerACR() *MetricManager {
 	mm := MetricManager{}
-	mm.MetricRW = RedisMZ{}
+	mm.MetricRW = RedisACR{}
 	return &mm
 }
