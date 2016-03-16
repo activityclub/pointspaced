@@ -20,6 +20,13 @@ func (self RedisSimple) ReadBuckets(uids []int64, metric string, aTypes []int64,
 	qr := QueryResponse{}
 	qr.UserToSum = make(map[string]int64)
 
+	secs, mins, hours, days, months := deltasForRange(start_ts, end_ts)
+	fmt.Println("secs ", secs)
+	fmt.Println("mins ", mins)
+	fmt.Println("hours ", hours)
+	fmt.Println("days ", days)
+	fmt.Println("months ", months)
+
 	buckets := bucketsForRange(start_ts, end_ts)
 	//fmt.Println(buckets)
 
@@ -35,6 +42,15 @@ func (self RedisSimple) ReadBuckets(uids []int64, metric string, aTypes []int64,
 	}
 
 	return qr
+}
+
+func deltasForRange(start_ts, end_ts int64) (secs, mins, hours, days, months float64) {
+	secs = float64(end_ts - start_ts)
+	mins = secs / 60.0
+	hours = mins / 60.0
+	days = hours / 24.0
+	months = days / 30.0
+	return
 }
 
 func bucketsForRange(start_ts, end_ts int64) map[string][]int {
