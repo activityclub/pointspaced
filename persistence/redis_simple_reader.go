@@ -88,7 +88,7 @@ func splitDays(start_ts, end_ts int64) (before int64, buckets []string, after in
 
 	endDay := to.Day()
 
-	hourCount = 0
+	hourCount = -1
 	for {
 		if to.Day() < endDay {
 			break
