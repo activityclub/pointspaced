@@ -23,7 +23,7 @@ func TestSimple(t *testing.T) {
 
 func testMetricRWInterface(t *testing.T, mm MetricRW) {
 	testValidRead(t, mm)
-	//testMultiDayValidReadACR(t, mm)
+	testMultiDayValidReadACR(t, mm)
 	//testEvenLongerMultiDayValidReadACR(t, mm)
 }
 

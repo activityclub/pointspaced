@@ -21,7 +21,7 @@ func (self RedisSimple) ReadBuckets(uids []int64, metric string, aTypes []int64,
 	qr.UserToSum = make(map[string]int64)
 
 	buckets := bucketsForRange(start_ts, end_ts)
-	fmt.Println(buckets)
+	//fmt.Println(buckets)
 
 	if debug == "1" {
 		//qr.Debug = nil
@@ -168,13 +168,15 @@ func makeKey(uid, atype int64, bucket, metric string) string {
 
 func sumFromRedisMinBuckets(buckets map[string][]int, uid, atype int64, metric string) int64 {
 	r := psdcontext.Ctx.RedisPool.Get()
+	ordered_list := make([]string, 0)
 	for b := range buckets {
 		key := makeKey(uid, atype, b, metric)
 		r.Send("ZRANGE", key, "0", "-1", "WITHSCORES")
+		ordered_list = append(ordered_list, b)
 	}
 	r.Flush()
 	sum := int64(0)
-	for b := range buckets {
+	for _, b := range ordered_list {
 		val := buckets[b]
 		min := val[0]
 		max := val[1]
