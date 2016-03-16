@@ -44,9 +44,17 @@ func (self RedisSimple) ReadBuckets(uids []int64, metric string, aTypes []int64,
 	}
 
 	buckets := bucketsForRange(start_ts, start_ts+before)
-	buckets = append(buckets, bucketsForRange(end_ts-after, end_ts))
 	//fmt.Println(buckets)
 
+	for _, uid := range uids {
+		sum := int64(0)
+		for _, atype := range aTypes {
+			sum += sumFromRedisMinBuckets(buckets, uid, atype, metric)
+		}
+		qr.UserToSum[strconv.FormatInt(uid, 10)] = sum
+	}
+
+	buckets = bucketsForRange(end_ts-after, end_ts)
 	for _, uid := range uids {
 		sum := int64(0)
 		for _, atype := range aTypes {
