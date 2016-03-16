@@ -17,7 +17,7 @@ func randMetric(uid, atype int64, metric string) {
 }
 
 func main2() {
-	mm := persistence.NewMetricManager()
+	mm := persistence.NewMetricManagerSimple()
 	uids := []int64{327}
 	atypes := []int64{0}
 
