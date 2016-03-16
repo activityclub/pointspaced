@@ -20,19 +20,14 @@ func (self RedisSimple) ReadBuckets(uids []int64, metric string, aTypes []int64,
 	qr := QueryResponse{}
 	qr.UserToSum = make(map[string]int64)
 
-	secs, mins, hours, days, months := deltasForRange(start_ts, end_ts)
-	fmt.Println("secs ", secs)
-	fmt.Println("mins ", mins)
-	fmt.Println("hours ", hours)
-	fmt.Println("days ", days)
-	fmt.Println("months ", months)
+	_, _, _, days, _ := deltasForRange(start_ts, end_ts)
 
 	var full_days []string
 	var before, after int64
 	if days > 0.0 {
 		before, full_days, after = splitDays(start_ts, end_ts)
-		fmt.Println(full_days)
-		fmt.Println(before, after)
+		//fmt.Println(full_days)
+		//fmt.Println(before, after)
 	}
 
 	for _, uid := range uids {
