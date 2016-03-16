@@ -27,6 +27,12 @@ func (self RedisSimple) ReadBuckets(uids []int64, metric string, aTypes []int64,
 	fmt.Println("days ", days)
 	fmt.Println("months ", months)
 
+	if days > 0.0 {
+		before, full_days, after := splitDays(start_ts, end_ts)
+		fmt.Println(full_days)
+		fmt.Println(before, after)
+	}
+
 	buckets := bucketsForRange(start_ts, end_ts)
 	//fmt.Println(buckets)
 
@@ -44,12 +50,29 @@ func (self RedisSimple) ReadBuckets(uids []int64, metric string, aTypes []int64,
 	return qr
 }
 
-func deltasForRange(start_ts, end_ts int64) (secs, mins, hours, days, months float64) {
-	secs = float64(end_ts - start_ts)
-	mins = secs / 60.0
+func deltasForRange(start_ts, end_ts int64) (secs int64, mins, hours, days, months float64) {
+	secs = end_ts - start_ts
+	mins = float64(secs) / 60.0
 	hours = mins / 60.0
 	days = hours / 24.0
 	months = days / 30.0
+	return
+}
+
+func splitDays(start_ts, end_ts int64) (before int64, buckets []string, after int64) {
+	from := time.Unix(start_ts, 0)
+	to := time.Unix(end_ts, 0)
+	buckets = make([]string, 0)
+
+	for {
+		if from.Unix() > to.Unix() {
+			break
+		}
+		bucket := bucket_for_day(from)
+		buckets = append(buckets, bucket)
+		from = from.Add(time.Hour * 24)
+	}
+
 	return
 }
 
