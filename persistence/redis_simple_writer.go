@@ -10,21 +10,22 @@ func (self RedisSimple) WritePoint(flavor string, userId int64, value int64, act
 
 	t := time.Unix(timestamp, 0)
 
-	bucket_for_day := bucket_for_day(t)
-	bucket_with_hour := bucket_with_hour(t, t.Hour())
+	bucket_for_min := bucket_for_min(t)
+	fmt.Println(bucket_for_min)
 
-	addToBucket(userId, 0, value, bucket_for_day, flavor)
-	addToBucket(userId, activityTypeId, value, bucket_for_day, flavor)
-	addToBucket(userId, 0, value, bucket_with_hour, flavor)
-	addToBucket(userId, activityTypeId, value, bucket_with_hour, flavor)
+	addToBucket(userId, 0, value, bucket_for_min, flavor, t.Second())
 
 	return nil
 }
 
-func addToBucket(uid, atype, val int64, bucket, metric string) {
+func addToBucket(uid, atype, val int64, bucket, metric string, seconds int) {
 	r := psdcontext.Ctx.RedisPool.Get()
+
+	fmt.Println("sec ", seconds)
+	//  ZADD bucket13 200 5.01
+
 	key := makeKey(uid, atype, bucket, metric)
-	_, err := r.Do("INCRBY", key, val)
+	_, err := r.Do("ZADD", key, val, seconds)
 	if err != nil {
 		fmt.Println(err)
 	}

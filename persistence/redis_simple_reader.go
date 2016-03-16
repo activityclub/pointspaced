@@ -21,13 +21,15 @@ func (self RedisSimple) ReadBuckets(uids []int64, metric string, aTypes []int64,
 	qr.UserToSum = make(map[string]int64)
 
 	buckets := bucketsForRange(start_ts, end_ts)
+	fmt.Println(buckets)
+
 	if debug == "1" {
-		qr.Debug = buckets
+		//qr.Debug = nil
 	}
 	for _, uid := range uids {
 		sum := int64(0)
 		for _, atype := range aTypes {
-			sum += sumFromRedis(buckets, uid, atype, metric)
+			sum += sumFromRedisMinBuckets(buckets, uid, atype, metric)
 		}
 		qr.UserToSum[strconv.FormatInt(uid, 10)] = sum
 	}
@@ -35,6 +37,47 @@ func (self RedisSimple) ReadBuckets(uids []int64, metric string, aTypes []int64,
 	return qr
 }
 
+func bucketsForRange(start_ts, end_ts int64) map[string][]int {
+	min_hash := make(map[string]int)
+	max_hash := make(map[string]int)
+	final_hash := make(map[string][]int)
+
+	from := time.Unix(start_ts, 0)
+	to := time.Unix(end_ts, 0)
+
+	for {
+		if from.Unix() > to.Unix() {
+			break
+		}
+		bucket := bucket_for_min(from)
+		min_hash[bucket] = -1
+		from = from.Add(time.Second)
+	}
+
+	from = time.Unix(start_ts, 0)
+	for {
+		if from.Unix() > to.Unix() {
+			break
+		}
+		bucket := bucket_for_min(from)
+		if min_hash[bucket] == -1 {
+			min_hash[bucket] = from.Second()
+		}
+		max_hash[bucket] = from.Second()
+		from = from.Add(time.Second)
+	}
+
+	for key := range min_hash {
+		min := min_hash[key]
+		if min == -1 {
+			min = 0
+		}
+		max := max_hash[key]
+		final_hash[key] = []int{min, max}
+	}
+
+	return final_hash
+}
 func bucket_for_day(t time.Time) string {
 	format := t.Format("20060102")
 	return fmt.Sprintf("%s", format)
@@ -45,7 +88,12 @@ func bucket_with_hour(t time.Time, hour int) string {
 	return fmt.Sprintf("%s%02d", format, hour)
 }
 
-func bucketsForRange(start_ts, end_ts int64) []string {
+func bucket_for_min(t time.Time) string {
+	format := t.Format("200601021504")
+	return fmt.Sprintf("%s", format)
+}
+
+func bucketsForRange2(start_ts, end_ts int64) []string {
 	list := make([]string, 0)
 
 	simple := SimpleSum{}
@@ -117,23 +165,32 @@ func makeKey(uid, atype int64, bucket, metric string) string {
 	return key
 }
 
-func sumFromRedis(buckets []string, uid, atype int64, metric string) int64 {
+func sumFromRedisMinBuckets(buckets map[string][]int, uid, atype int64, metric string) int64 {
 	r := psdcontext.Ctx.RedisPool.Get()
-
-	for _, b := range buckets {
-		r.Send("GET", makeKey(uid, atype, b, metric))
+	for b := range buckets {
+		key := makeKey(uid, atype, b, metric)
+		r.Send("ZRANGE", key, "0", "-1", "WITHSCORES")
 	}
 	r.Flush()
-	var sum int64
-	sum = 0
-	for _, _ = range buckets {
-		v, err := redis.Int(r.Receive())
-		if err != nil && err.Error() != "redigo: nil returned" {
-			fmt.Println(err)
-		}
-		sum += int64(v)
-	}
+	sum := int64(0)
+	for b := range buckets {
+		val := buckets[b]
+		min := val[0]
+		max := val[1]
 
+		theMap, err := redis.IntMap(r.Receive())
+		if err != nil {
+			panic(err)
+		}
+		for mkey := range theMap {
+			sec_total := theMap[mkey]
+			mkey_int, _ := strconv.ParseInt(mkey, 10, 32)
+
+			if int(mkey_int) >= min && int(mkey_int) <= max {
+				sum += int64(sec_total)
+			}
+		}
+	}
 	r.Close()
 	return sum
 }
