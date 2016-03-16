@@ -18,6 +18,10 @@ func (self RedisSimple) WritePoint(flavor string, userId int64, value int64, act
 	addToBucketWithSeconds(userId, 0, value, bucket_for_min, flavor, t.Second())
 	addToBucket(userId, 0, value, bucket_for_hour, flavor)
 	addToBucket(userId, 0, value, bucket_for_day, flavor)
+
+	addToBucketWithSeconds(userId, activityTypeId, value, bucket_for_min, flavor, t.Second())
+	addToBucket(userId, activityTypeId, value, bucket_for_hour, flavor)
+	addToBucket(userId, activityTypeId, value, bucket_for_day, flavor)
 	return nil
 }
 
