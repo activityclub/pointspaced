@@ -250,53 +250,6 @@ func (self *RedisACR) requestsForRange(start_ts int64, end_ts int64) []RedisACRR
 
 }
 
-func (self RedisACR) bucketsForRange(start_ts int64, end_ts int64) map[string][]string {
-
-	buckets := map[string][]string{}
-
-	from := time.Unix(start_ts, 0).UTC()
-	to := time.Unix(end_ts, 0).UTC()
-
-	fmt.Println("FROM", from, "TO", to)
-
-	for {
-		if from.Unix() >= to.Unix() {
-			break
-		}
-
-		delta := to.Unix() - from.Unix()
-		if delta < 3600 {
-			// we must use minutes, cuz we have less than 1 hour
-
-			buckets["minute"] = append(buckets["minute"], from.Format("20060102150405"))
-			from = from.Add(time.Minute)
-
-		} else if delta < 86400 {
-			// we must use hours, cuz we have less than 1 day
-			buckets["hour"] = append(buckets["hour"], from.Format("200601021504"))
-			from = from.Add(time.Hour)
-
-		} else if delta < 2678400 {
-			buckets["day"] = append(buckets["day"], from.Format("2006010215"))
-			from = from.Add(time.Hour * 24)
-
-		} else {
-			buckets["month"] = append(buckets["month"], from.Format("20060102"))
-			from = from.Add(time.Hour * 24 * 31)
-		}
-	}
-
-	// MB full months before years
-	// Y full years
-	// MA months after years
-	// DA days after months
-	// HA hours after days
-	// MA minutes after hours
-	// SA seconds after minutes
-
-	return buckets
-}
-
 func (self RedisACR) WritePoint(flavor string, userId int64, value int64, activityTypeId int64, timestamp int64) error {
 
 	if (value == 0) ||
@@ -305,9 +258,6 @@ func (self RedisACR) WritePoint(flavor string, userId int64, value int64, activi
 		(activityTypeId == 0) ||
 		(flavor == "") {
 		return errors.New("invalid arguments")
-	}
-	if timestamp < 1430838227 {
-		return errors.New("invalid timestamp")
 	}
 
 	buckets, err := self.bucketsForJob(timestamp)

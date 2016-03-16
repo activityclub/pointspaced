@@ -1,41 +1,73 @@
 package persistence
 
-import (
-	"os"
-	"pointspaced/psdcontext"
-	"testing"
-	"time"
-)
+import "os"
+import "pointspaced/psdcontext"
+import "testing"
+import "time"
+import "fmt"
+import "math/rand"
+
+var randomTimestamps = []int64{}
 
 func TestMain(m *testing.M) {
 	// WARNING DO NOT RUN IN PROD!
 	psdcontext.Ctx.RedisPool = NewRedisPool(":6379")
+
+	// generate a crapload of random numbers
+	fmt.Println("[Prep] preparing random numbers")
+	rand.Seed(time.Now().UTC().UnixNano())
+	for {
+		min := 1426623393
+		max := 1489695427
+		n := randInt(min, max)
+		randomTimestamps = append(randomTimestamps, int64(n))
+		if len(randomTimestamps) >= 100000 {
+			break
+		}
+	}
+	fmt.Println("[Prep] done preparing random numbers")
+
 	os.Exit(m.Run())
 }
 
+func randInt(min int, max int) int {
+	return min + rand.Intn(max-min)
+}
+
 func TestACR(t *testing.T) {
-	//testMetricRWInterface(t, NewMetricManagerACR())
+	testMetricRWInterface(t, NewMetricManagerACR())
 }
 
 func TestSimple(t *testing.T) {
-	testMetricRWInterface(t, NewMetricManagerSimple())
+	//	testMetricRWInterface(t, NewMetricManagerSimple())
+}
+
+func BenchmarkACR_OneHundred(b *testing.B) {
+	benchmarkWriteN(b, NewMetricManagerACR(), 100)
+}
+
+func BenchmarkACR_OneThousand(b *testing.B) {
+	benchmarkWriteN(b, NewMetricManagerACR(), 1000)
+}
+
+func BenchmarkACR_TenThousand(b *testing.B) {
+	benchmarkWriteN(b, NewMetricManagerACR(), 10000)
 }
 
 func testMetricRWInterface(t *testing.T, mm MetricRW) {
-	//testValidRead(t, mm)
-	testMultiDayValidReadACR(t, mm)
-	//testEvenLongerMultiDayValidReadACR(t, mm)
+	testValidRead(t, mm)
+	testMultiDayValidRead(t, mm)
+	testEvenLongerMultiDayValidRead(t, mm)
 }
 
-func Implementations() []MetricRW {
-	return []MetricRW{NewMetricManagerSimple(), NewMetricManagerACR()}
-}
-
-func testValidRead(t *testing.T, mm MetricRW) {
-
+func clearRedisCompletely() {
 	r := psdcontext.Ctx.RedisPool.Get()
 	r.Do("flushall")
 	r.Close()
+}
+
+func testValidRead(t *testing.T, mm MetricRW) {
+	clearRedisCompletely()
 
 	// we will write 10 points
 	err := mm.WritePoint("points", 1, 10, 3, 1458061005)
@@ -63,10 +95,9 @@ func testValidRead(t *testing.T, mm MetricRW) {
 	}
 }
 
-func testMultiDayValidReadACR(t *testing.T, mm MetricRW) {
-	r := psdcontext.Ctx.RedisPool.Get()
-	r.Do("flushall")
-	r.Close()
+func testMultiDayValidRead(t *testing.T, mm MetricRW) {
+
+	clearRedisCompletely()
 	// we will write 10 points
 
 	err := mm.WritePoint("points", 1, 10, 3, 1458061005)
@@ -91,11 +122,9 @@ func testMultiDayValidReadACR(t *testing.T, mm MetricRW) {
 	}
 }
 
-func testEvenLongerMultiDayValidReadACR(t *testing.T, mm MetricRW) {
+func testEvenLongerMultiDayValidRead(t *testing.T, mm MetricRW) {
+	clearRedisCompletely()
 
-	r := psdcontext.Ctx.RedisPool.Get()
-	r.Do("flushall")
-	r.Close()
 	// we will write 10 points
 	err := mm.WritePoint("points", 1, 100, 3, 1451635204)
 	if err != nil {
@@ -134,20 +163,34 @@ func testEvenLongerMultiDayValidReadACR(t *testing.T, mm MetricRW) {
 	}
 }
 
-func BenchmarkWrite100ACR(b *testing.B) {
+func shuffleTsArray() []int64 {
+	dest := make([]int64, len(randomTimestamps))
+	perm := rand.Perm(len(randomTimestamps))
+	for i, v := range perm {
+		dest[v] = randomTimestamps[i]
+	}
+	return dest
+}
 
-	mm := NewMetricManagerACR()
-	iteration := 0
-	for {
-		err := mm.MetricRW.WritePoint("steps", 1, 10, 3, time.Now().Unix())
-		if err != nil {
-			b.Fail()
-		}
+func benchmarkWriteN(b *testing.B, mm MetricRW, amnt int) {
 
-		iteration += 1
-		if iteration >= 100 {
-			break
+	for i := 0; i < b.N; i++ {
+
+		src := shuffleTsArray()
+		clearRedisCompletely()
+
+		iteration := 0
+		for {
+			err := mm.WritePoint("steps", 1, 10, 3, src[iteration])
+			if err != nil {
+				fmt.Println(err.Error())
+				b.Fail()
+			}
+
+			iteration += 1
+			if iteration >= amnt {
+				break
+			}
 		}
 	}
-
 }
