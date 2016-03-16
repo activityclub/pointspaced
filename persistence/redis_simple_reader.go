@@ -83,9 +83,9 @@ func bucket_for_day(t time.Time) string {
 	return fmt.Sprintf("%s", format)
 }
 
-func bucket_with_hour(t time.Time, hour int) string {
+func bucket_for_hour(t time.Time) string {
 	format := t.Format("20060102")
-	return fmt.Sprintf("%s%02d", format, hour)
+	return fmt.Sprintf("%s", format)
 }
 
 func bucket_for_min(t time.Time) string {
@@ -93,6 +93,7 @@ func bucket_for_min(t time.Time) string {
 	return fmt.Sprintf("%s", format)
 }
 
+/*
 func bucketsForRange2(start_ts, end_ts int64) []string {
 	list := make([]string, 0)
 
@@ -156,7 +157,7 @@ func (self *SimpleSum) hour_buckets_after_full_days(to time.Time) []string {
 		self.From = self.From.Add(time.Hour)
 	}
 	return list
-}
+}*/
 
 func makeKey(uid, atype int64, bucket, metric string) string {
 	key := "psd:"
