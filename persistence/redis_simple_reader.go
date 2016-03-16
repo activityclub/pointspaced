@@ -27,7 +27,7 @@ func (self RedisSimple) ReadBuckets(uids []int64, metric string, aTypes []int64,
 	if days > 0.0 && secs > 3600 {
 		before, full_days, after = splitDays(start_ts, end_ts)
 		//fmt.Println(full_days)
-		fmt.Println(before, after)
+		//fmt.Println(before, after)
 		for _, uid := range uids {
 			sum := int64(0)
 			for _, atype := range aTypes {
