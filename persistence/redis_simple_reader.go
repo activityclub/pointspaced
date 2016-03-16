@@ -71,18 +71,34 @@ func splitDays(start_ts, end_ts int64) (before int64, buckets []string, after in
 	buckets = make([]string, 0)
 
 	startDay := from.Day()
+	hourCount := 0
 
 	for {
 		if from.Day() > startDay {
 			break
 		}
 		from = from.Add(time.Hour)
+		hourCount += 1
 	}
 
 	// this are the seconds before 1st full day
-	before = int64((from.Minute() * 60) + from.Second())
+	before = int64((hourCount * 3600) + (from.Minute() * 60) + from.Second())
 	// make from full day at 00:00
 	from = time.Unix(from.Unix()-before, 0)
+
+	endDay := to.Day()
+
+	hourCount = 0
+	for {
+		if to.Day() < endDay {
+			break
+		}
+		to = to.Add(time.Hour * -1)
+		hourCount += 1
+	}
+
+	after = int64((hourCount * 3600) + (to.Minute() * 60) + to.Second())
+	to = time.Unix(to.Unix()-after, 0)
 
 	for {
 		if from.Unix() > to.Unix() {
@@ -92,8 +108,6 @@ func splitDays(start_ts, end_ts int64) (before int64, buckets []string, after in
 		buckets = append(buckets, bucket)
 		from = from.Add(time.Hour * 24)
 	}
-	// chop last day
-	buckets = buckets[0 : len(buckets)-1]
 
 	return
 }
