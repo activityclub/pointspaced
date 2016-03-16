@@ -17,16 +17,14 @@ type RedisSimple struct {
 
 func (self RedisSimple) ReadBuckets(uids []int64, metric string, aTypes []int64, start_ts int64, end_ts int64, debug string) QueryResponse {
 
-	fmt.Println("1111")
 	qr := QueryResponse{}
 	qr.UserToSum = make(map[string]int64)
-	fmt.Println("11112")
 
 	buckets := bucketsForRange(start_ts, end_ts)
 	fmt.Println(buckets)
 
 	if debug == "1" {
-		//qr.Debug = buckets
+		//qr.Debug = nil
 	}
 	for _, uid := range uids {
 		sum := int64(0)
@@ -36,7 +34,6 @@ func (self RedisSimple) ReadBuckets(uids []int64, metric string, aTypes []int64,
 		qr.UserToSum[strconv.FormatInt(uid, 10)] = sum
 	}
 
-	fmt.Println("qr ", qr)
 	return qr
 }
 
@@ -180,7 +177,6 @@ func sumFromRedisMinBuckets(buckets map[string][]int, uid, atype int64, metric s
 		val := buckets[b]
 		min := val[0]
 		max := val[1]
-		fmt.Println(min, max)
 
 		theMap, err := redis.IntMap(r.Receive())
 		if err != nil {
