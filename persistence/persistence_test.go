@@ -42,6 +42,32 @@ func TestSimple(t *testing.T) {
 	testMetricRWInterface(t, NewMetricManagerSimple())
 }
 
+func BenchmarkSimple_OneHundred(b *testing.B) {
+	benchmarkWriteN(b, NewMetricManagerSimple(), 100)
+}
+
+func BenchmarkSimple_OneThousand(b *testing.B) {
+	benchmarkWriteN(b, NewMetricManagerSimple(), 1000)
+}
+
+func BenchmarkSimple_TenThousand(b *testing.B) {
+	benchmarkWriteN(b, NewMetricManagerSimple(), 10000)
+}
+
+func BenchmarkSimple_ShortRead(b *testing.B) {
+	benchShortRead(b, NewMetricManagerSimple())
+}
+
+func BenchmarkSimple_MediumRead(b *testing.B) {
+	benchMediumRead(b, NewMetricManagerSimple())
+}
+
+func BenchmarkSimple_LongRead(b *testing.B) {
+	benchLongRead(b, NewMetricManagerSimple())
+}
+
+// --------------
+
 func BenchmarkACR_OneHundred(b *testing.B) {
 	benchmarkWriteN(b, NewMetricManagerACR(), 100)
 }
