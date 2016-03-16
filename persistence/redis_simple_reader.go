@@ -152,18 +152,20 @@ func makeKey(uid, atype int64, bucket, metric string) string {
 	return key
 }
 
-func sumFromRedisMinBuckets(buckets map[string][]int, uid, atype, int64, metric string) int64 {
+func sumFromRedisMinBuckets(buckets map[string][]int, uid, atype int64, metric string) int64 {
 	r := psdcontext.Ctx.RedisPool.Get()
-	for key := range buckets {
-		r.Send("ZRANGE", makeKey(uid, atype, key, metric), "0", "-1", "WITHSCORES")
-		val := buckets[key]
-		min := val[0]
-		max := val[1]
+	for b := range buckets {
+		key := makeKey(uid, atype, b, metric)
+		r.Send("ZRANGE", key, "0", "-1", "WITHSCORES")
 	}
 	r.Flush()
-	var sum int64
-	sum = 0
-	for key := range buckets {
+	sum := int64(0)
+	for b := range buckets {
+		val := buckets[b]
+		min := val[0]
+		max := val[1]
+		fmt.Println(min, max)
+
 		v, err := redis.Int(r.Receive())
 		fmt.Println(v)
 		if err != nil && err.Error() != "redigo: nil returned" {
