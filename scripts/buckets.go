@@ -16,7 +16,7 @@ func randMetric(uid, atype int64, metric string) {
 	rs.WritePoint(metric, uid, val, atype, ts)
 }
 
-func main() {
+func main2() {
 	mm := persistence.NewMetricManager()
 	uids := []int64{327}
 	atypes := []int64{0}
@@ -25,7 +25,7 @@ func main() {
 	fmt.Println(qr)
 }
 
-func main2() {
+func main() {
 	psdcontext.Ctx.RedisPool = persistence.NewRedisPool(":6379")
 	fmt.Println("hi")
 
