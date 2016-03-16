@@ -169,17 +169,18 @@ func sumFromRedisMinBuckets(buckets map[string][]int, uid, atype int64, metric s
 		max := val[1]
 		fmt.Println(min, max)
 
-		v, err := redis.IntMap(r.Receive())
-		fmt.Println(v)
-		if err != nil && err.Error() != "redigo: nil returned" {
-			fmt.Println(err)
+		theMap, err := redis.IntMap(r.Receive())
+		if err != nil {
+			panic(err)
 		}
-		v, err = redis.IntMap(r.Receive())
-		fmt.Println(v)
-		if err != nil && err.Error() != "redigo: nil returned" {
-			fmt.Println(err)
+		for mkey := range theMap {
+			sec_total := theMap[mkey]
+			mkey_int, _ := strconv.ParseInt(mkey, 10, 32)
+
+			if int(mkey_int) >= min && int(mkey_int) <= max {
+				sum += int64(sec_total)
+			}
 		}
-		sum += int64(0)
 	}
 	r.Close()
 	return sum
