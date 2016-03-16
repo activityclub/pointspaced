@@ -14,10 +14,12 @@ func NewRedisPool(server string) *redis.Pool {
 			}
 			return c, err
 		},
-		TestOnBorrow: func(c redis.Conn, t time.Time) error {
-			_, err := c.Do("PING")
-			return err
-		},
+		/*
+			TestOnBorrow: func(c redis.Conn, t time.Time) error {
+				_, err := c.Do("PING")
+				return err
+			},
+		*/
 	}
 }
 

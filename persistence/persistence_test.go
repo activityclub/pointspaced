@@ -39,7 +39,7 @@ func TestACR(t *testing.T) {
 }
 
 func TestSimple(t *testing.T) {
-	//	testMetricRWInterface(t, NewMetricManagerSimple())
+	testMetricRWInterface(t, NewMetricManagerSimple())
 }
 
 func BenchmarkACR_OneHundred(b *testing.B) {
@@ -54,10 +54,23 @@ func BenchmarkACR_TenThousand(b *testing.B) {
 	benchmarkWriteN(b, NewMetricManagerACR(), 10000)
 }
 
+func BenchmarkACR_ShortRead(b *testing.B) {
+	benchShortRead(b, NewMetricManagerACR())
+}
+
+func BenchmarkACR_MediumRead(b *testing.B) {
+	benchMediumRead(b, NewMetricManagerACR())
+}
+
+func BenchmarkACR_LongRead(b *testing.B) {
+	benchLongRead(b, NewMetricManagerACR())
+}
+
 func testMetricRWInterface(t *testing.T, mm MetricRW) {
 	testValidRead(t, mm)
 	testMultiDayValidRead(t, mm)
 	testEvenLongerMultiDayValidRead(t, mm)
+	testReallyLongValidRead(t, mm)
 }
 
 func clearRedisCompletely() {
@@ -92,6 +105,14 @@ func testValidRead(t *testing.T, mm MetricRW) {
 	if res.UserToSum["1"] != 21 {
 		t.Logf("Incorrect Sum.  Expected 21, Received %d", res.UserToSum["1"])
 		t.Fail()
+	}
+}
+
+func testReallyLongValidRead(t *testing.T, mm MetricRW) {
+	clearRedisCompletely()
+	res := mm.ReadBuckets([]int64{1}, "points", []int64{3}, 1268082893, 1458061010, "0")
+	if res.UserToSum["1"] != 0 {
+		t.Errorf("Incorrect Sum.  Expected 0, Received %d", res.UserToSum["1"])
 	}
 }
 
@@ -193,4 +214,31 @@ func benchmarkWriteN(b *testing.B, mm MetricRW, amnt int) {
 			}
 		}
 	}
+}
+
+func benchShortRead(b *testing.B, mm MetricRW) {
+
+	clearRedisCompletely()
+	for i := 0; i < b.N; i++ {
+		mm.ReadBuckets([]int64{1}, "points", []int64{3}, 1458061005, 1458061010, "0")
+	}
+
+}
+
+func benchMediumRead(b *testing.B, mm MetricRW) {
+
+	clearRedisCompletely()
+	for i := 0; i < b.N; i++ {
+		mm.ReadBuckets([]int64{1}, "points", []int64{3}, 1456262072, 1458162884, "0")
+	}
+
+}
+
+func benchLongRead(b *testing.B, mm MetricRW) {
+
+	clearRedisCompletely()
+	for i := 0; i < b.N; i++ {
+		mm.ReadBuckets([]int64{1}, "points", []int64{3}, 1268082893, 1458061010, "0")
+	}
+
 }

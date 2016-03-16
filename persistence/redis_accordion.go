@@ -1,7 +1,8 @@
 package persistence
 
 import "time"
-import "fmt"
+
+//import "fmt"
 import "strconv"
 import "errors"
 import "pointspaced/psdcontext"
@@ -59,9 +60,9 @@ func NewRedisACRRequest(bucket string, granularity string, scoremin int, scorema
 
 func (self RedisACR) ReadBuckets(uids []int64, metric string, aTypes []int64, start_ts int64, end_ts int64, debug string) QueryResponse {
 
-	fmt.Println("[Accordion] START", start_ts, "END", end_ts)
+	//	fmt.Println("[Accordion] START", start_ts, "END", end_ts)
 	requests := self.requestsForRange(start_ts, end_ts)
-	fmt.Println("[Accordion] Requests:", requests)
+	//	fmt.Println("[Accordion] Requests:", requests)
 
 	r := psdcontext.Ctx.RedisPool.Get()
 
@@ -96,9 +97,6 @@ func (self RedisACR) ReadBuckets(uids []int64, metric string, aTypes []int64, st
 
 				if myts >= request.QueryMin() && myts <= request.QueryMax() {
 					sum += intval
-					//					fmt.Println("ACCEPT", intval, request.TimeBucket, myts, request.QueryMin(), request.QueryMax())
-				} else {
-					//					fmt.Println("REJECT", intval, request.TimeBucket, myts, request.QueryMin(), request.QueryMax())
 				}
 			}
 		}
@@ -119,7 +117,7 @@ func (self *RedisACR) requestsForRange(start_ts int64, end_ts int64) []RedisACRR
 	reqs := []RedisACRRequest{}
 	cursor := NewRedisACRCursor(from, to)
 
-	fmt.Println("[Accordion] requestsForRange FROM", from, "TO", to)
+	//	fmt.Println("[Accordion] requestsForRange FROM", from, "TO", to)
 
 	tmp := map[string]RedisACRRequest{}
 
@@ -140,6 +138,7 @@ func (self *RedisACR) requestsForRange(start_ts int64, end_ts int64) []RedisACRR
 
 		if cursor.CanJumpYear() {
 			tmp[cursor.YearKey()] = NewRedisACRRequest(cursor.YearKey(), "year", 1, 12)
+			cursor.JumpYear()
 
 		} else if cursor.CanJumpMonth() {
 
