@@ -56,32 +56,65 @@ func after_times(ts int64) (min, hour, day time.Time) {
 	return
 }
 
+func addSumNormalBuckets(buckets []string, uids []int64, metric string, aTypes []int64, qr *QueryResponse) {
+	for _, uid := range uids {
+		sum := int64(0)
+		for _, atype := range aTypes {
+			sum += sumFromRedis(buckets, uid, atype, metric)
+		}
+
+		qr.UserToSum[strconv.FormatInt(uid, 10)] += sum
+	}
+}
+func addSumMinBuckets(buckets map[string][]int, uids []int64, metric string, aTypes []int64, qr *QueryResponse) {
+	for _, uid := range uids {
+		sum := int64(0)
+		for _, atype := range aTypes {
+			sum += sumFromRedisMinBuckets(buckets, uid, atype, metric)
+		}
+
+		qr.UserToSum[strconv.FormatInt(uid, 10)] += sum
+	}
+}
+
 func (self RedisSimple) ReadBuckets(uids []int64, metric string, aTypes []int64, start_ts int64, end_ts int64, debug string) QueryResponse {
 	qr := QueryResponse{}
 	qr.UserToSum = make(map[string]int64)
 
 	cursor := start_ts
 	min, hour, bday := before_times(start_ts)
-	sec_bucket := bucketsForRange(cursor, min.Unix()-1)
-	fmt.Println(sec_bucket)
+	sec_buckets := bucketsForRange(cursor, min.Unix()-1)
+	addSumMinBuckets(sec_buckets, uids, metric, aTypes, &qr)
+
+	//fmt.Println(sec_buckets)
 	min_buckets := bucketsForRange(min.Unix(), hour.Unix()-1)
-	fmt.Println(min_buckets)
+	addSumMinBuckets(min_buckets, uids, metric, aTypes, &qr)
+	//fmt.Println(min_buckets)
 
 	hour_buckets := bucketsForHours(hour.Unix(), bday.Unix()-1)
-	fmt.Println(hour_buckets)
+	addSumNormalBuckets(hour_buckets, uids, metric, aTypes, &qr)
+	//fmt.Println(hour_buckets)
 
-	fmt.Println("before_times: ", min, hour, bday)
-	fmt.Println(bday)
+	//fmt.Println("before_times: ", min, hour, bday)
+	//fmt.Println(bday)
 	var aday time.Time
 	min, hour, aday = after_times(end_ts)
-	fmt.Println("after_times: ", min, hour, aday)
-	sec_bucket = bucketsForRange(min.Unix(), end_ts)
-	fmt.Println(sec_bucket)
+	//fmt.Println("after_times: ", min, hour, aday)
+
+	day_buckets := bucketsForDays(bday.Unix(), aday.Unix()-1)
+	addSumNormalBuckets(day_buckets, uids, metric, aTypes, &qr)
+	//fmt.Println(day_buckets)
+
+	sec_buckets = bucketsForRange(min.Unix(), end_ts)
+	addSumMinBuckets(sec_buckets, uids, metric, aTypes, &qr)
+	//fmt.Println(sec_buckets)
 	min_buckets = bucketsForRange(hour.Unix(), min.Unix()-1)
-	fmt.Println(min_buckets)
+	addSumMinBuckets(min_buckets, uids, metric, aTypes, &qr)
+	//fmt.Println(min_buckets)
 
 	hour_buckets = bucketsForHours(aday.Unix(), hour.Unix()-1)
-	fmt.Println(hour_buckets)
+	addSumNormalBuckets(hour_buckets, uids, metric, aTypes, &qr)
+	//fmt.Println(hour_buckets)
 	//fmt.Println(day)
 	//fmt.Println(hour)
 	//fmt.Println(min)
@@ -89,176 +122,22 @@ func (self RedisSimple) ReadBuckets(uids []int64, metric string, aTypes []int64,
 	return qr
 }
 
-func (self RedisSimple) ReadBuckets2(uids []int64, metric string, aTypes []int64, start_ts int64, end_ts int64, debug string) QueryResponse {
+func bucketsForDays(start_ts, end_ts int64) []string {
+	results := make([]string, 0)
 
-	qr := QueryResponse{}
-	qr.UserToSum = make(map[string]int64)
-
-	secs, _, _, days, _ := deltasForRange(start_ts, end_ts)
-
-	var full_days, before_hours, after_hours []string
-	var before, after int64
-	if days > 0.0 && secs > 3600 {
-		before, full_days, after = splitDays(start_ts, end_ts)
-		//fmt.Println(full_days)
-		//fmt.Println(before, after)
-		for _, uid := range uids {
-			sum := int64(0)
-			for _, atype := range aTypes {
-				sum += sumFromRedis(full_days, uid, atype, metric)
-			}
-
-			qr.UserToSum[strconv.FormatInt(uid, 10)] = sum
-		}
-
-		// look at before and after and find full hours
-		before, before_hours, _ = splitHours(start_ts, start_ts+before)
-		fmt.Println(before, before_hours)
-
-		// query each bfull_hours
-		_, after_hours, after = splitHours(end_ts-after, end_ts)
-		// query each afull_hours
-
-		for _, uid := range uids {
-			sum := int64(0)
-			for _, atype := range aTypes {
-				sum += sumFromRedis(before_hours, uid, atype, metric)
-				sum += sumFromRedis(after_hours, uid, atype, metric)
-			}
-			qr.UserToSum[strconv.FormatInt(uid, 10)] += sum
-		}
-
-		// no more full hours avail, go down to full mins, then secs
-		buckets := bucketsForRange(start_ts, start_ts+before)
-		//fmt.Println(buckets)
-
-		for _, uid := range uids {
-			sum := int64(0)
-			for _, atype := range aTypes {
-				sum += sumFromRedisMinBuckets(buckets, uid, atype, metric)
-			}
-			qr.UserToSum[strconv.FormatInt(uid, 10)] += sum
-		}
-
-		buckets = bucketsForRange(end_ts-after, end_ts)
-		for _, uid := range uids {
-			sum := int64(0)
-			for _, atype := range aTypes {
-				sum += sumFromRedisMinBuckets(buckets, uid, atype, metric)
-			}
-			qr.UserToSum[strconv.FormatInt(uid, 10)] += sum
-		}
-	} else {
-		buckets := bucketsForRange(start_ts, end_ts)
-
-		for _, uid := range uids {
-			sum := int64(0)
-			for _, atype := range aTypes {
-				sum += sumFromRedisMinBuckets(buckets, uid, atype, metric)
-			}
-			qr.UserToSum[strconv.FormatInt(uid, 10)] = sum
-		}
-	}
-
-	return qr
-}
-
-func deltasForRange(start_ts, end_ts int64) (secs int64, mins, hours, days, months float64) {
-	secs = end_ts - start_ts
-	mins = float64(secs) / 60.0
-	hours = mins / 60.0
-	days = hours / 24.0
-	months = days / 30.0
-	return
-}
-
-func splitHours(start_ts, end_ts int64) (before int64, buckets []string, after int64) {
 	from := time.Unix(start_ts, 0)
 	to := time.Unix(end_ts, 0)
-	buckets = make([]string, 0)
-
-	minCount := 0
-
-	for {
-		if from.Unix() > start_ts {
-			break
-		}
-		from = from.Add(time.Minute)
-		minCount += 1
-	}
-
-	before = int64((minCount * 60) + from.Second())
-	from = time.Unix(from.Unix()-int64(from.Second()), 0)
-
-	minCount = -1
-	for {
-		if to.Unix() < end_ts {
-			break
-		}
-		to = to.Add(time.Minute * -1)
-		minCount += 1
-	}
-
-	after = int64((minCount * 60) + to.Second())
-	to = time.Unix(to.Unix()-int64(to.Second()), 0)
-
-	for {
-		if from.Unix() > to.Unix() {
-			break
-		}
-		bucket := bucket_for_hour(from)
-		buckets = append(buckets, bucket)
-		from = from.Add(time.Hour)
-	}
-
-	return
-}
-
-func splitDays(start_ts, end_ts int64) (before int64, buckets []string, after int64) {
-	from := time.Unix(start_ts, 0)
-	to := time.Unix(end_ts, 0)
-	buckets = make([]string, 0)
-
-	startDay := from.Day()
-	hourCount := 0
-
-	for {
-		if from.Day() > startDay {
-			break
-		}
-		from = from.Add(time.Hour)
-		hourCount += 1
-	}
-
-	// this are the seconds before 1st full day
-	before = int64((hourCount * 3600) + (from.Minute() * 60) + from.Second())
-	// make from full day at 00:00
-	from = time.Unix(from.Unix()-int64((from.Minute()*60)-from.Second()), 0)
-
-	endDay := to.Day()
-
-	hourCount = -1
-	for {
-		if to.Day() < endDay {
-			break
-		}
-		to = to.Add(time.Hour * -1)
-		hourCount += 1
-	}
-
-	after = int64((hourCount * 3600) + (to.Minute() * 60) + to.Second())
-	to = time.Unix(to.Unix()-after, 0)
 
 	for {
 		if from.Unix() > to.Unix() {
 			break
 		}
 		bucket := bucket_for_day(from)
-		buckets = append(buckets, bucket)
+		results = append(results, bucket)
 		from = from.Add(time.Hour * 24)
 	}
 
-	return
+	return results
 }
 
 func bucketsForHours(start_ts, end_ts int64) []string {
