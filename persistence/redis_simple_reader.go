@@ -64,9 +64,12 @@ func (self RedisSimple) ReadBuckets(uids []int64, metric string, aTypes []int64,
 	min, hour, day := before_times(start_ts)
 	sec_bucket := bucketsForRange(cursor, min.Unix()-1)
 	fmt.Println(sec_bucket)
-	min_buckets := bucketsForRange(min.Unix(), hour.Unix())
+	min_buckets := bucketsForRange(min.Unix(), hour.Unix()-1)
 	fmt.Println(min_buckets)
 
+	hour_buckets := bucketsForHours(hour.Unix(), day.Unix()-1)
+
+	fmt.Println(hour_buckets)
 	// from start_ts to min, read sec buckets
 	// from min to hour, read min buckets
 	// from hour to day, read hour buckets
@@ -258,6 +261,24 @@ func splitDays(start_ts, end_ts int64) (before int64, buckets []string, after in
 	return
 }
 
+func bucketsForHours(start_ts, end_ts int64) []string {
+	results := make([]string, 0)
+
+	from := time.Unix(start_ts, 0)
+	to := time.Unix(end_ts, 0)
+
+	for {
+		if from.Unix() > to.Unix() {
+			break
+		}
+		bucket := bucket_for_hour(from)
+		results = append(results, bucket)
+		from = from.Add(time.Hour)
+	}
+
+	return results
+}
+
 func bucketsForRange(start_ts, end_ts int64) map[string][]int {
 	min_hash := make(map[string]int)
 	max_hash := make(map[string]int)
@@ -313,72 +334,6 @@ func bucket_for_min(t time.Time) string {
 	format := t.Format("200601021504")
 	return fmt.Sprintf("%s", format)
 }
-
-/*
-func bucketsForRange2(start_ts, end_ts int64) []string {
-	list := make([]string, 0)
-
-	simple := SimpleSum{}
-	simple.From = time.Unix(start_ts, 0)
-	to := time.Unix(end_ts, 0)
-
-	for _, b := range simple.hour_buckets_before_full_days() {
-		list = append(list, b)
-	}
-	for _, b := range simple.full_day_buckets(to) {
-		list = append(list, b)
-	}
-	for _, b := range simple.hour_buckets_after_full_days(to) {
-		list = append(list, b)
-	}
-
-	return list
-}
-
-func (self *SimpleSum) hour_buckets_before_full_days() []string {
-	list := make([]string, 0)
-	hour := self.From.Hour()
-	for {
-		if hour > 23 {
-			break
-		}
-		bucket := bucket_with_hour(self.From, hour)
-		list = append(list, bucket)
-		hour += 1
-		self.From = self.From.Add(time.Hour)
-	}
-
-	return list
-}
-
-func (self *SimpleSum) full_day_buckets(to time.Time) []string {
-	list := make([]string, 0)
-	for {
-		if self.From.Unix() >= (to.Unix() - 86400) {
-			break
-		}
-		bucket := bucket_for_day(self.From)
-		list = append(list, bucket)
-
-		self.From = self.From.Add(time.Hour * 24)
-	}
-	return list
-}
-
-func (self *SimpleSum) hour_buckets_after_full_days(to time.Time) []string {
-	list := make([]string, 0)
-	hour := self.From.Hour()
-	for {
-		if self.From.Unix() >= to.Unix()+3600 {
-			break
-		}
-		bucket := bucket_with_hour(self.From, hour)
-		list = append(list, bucket)
-		hour += 1
-		self.From = self.From.Add(time.Hour)
-	}
-	return list
-}*/
 
 func makeKey(uid, atype int64, bucket, metric string) string {
 	key := "psd:"
