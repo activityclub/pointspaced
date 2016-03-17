@@ -36,23 +36,24 @@ func foo(ts int64) (min, hour, day time.Time) {
 	return
 }
 
-func bar(ts int64) {
+func bar(ts int64) (min, hour, day time.Time) {
 	to := time.Unix(ts, 0)
 	if to.Second() > 0 {
 		secs_til_min := time.Duration(to.Second())
 		to = to.Add(time.Second * secs_til_min * -1)
+		min = to
 	}
-	fmt.Println(to)
 	if to.Minute() > 0 {
 		mins_til_hour := time.Duration(to.Minute())
 		to = to.Add(time.Minute * mins_til_hour * -1)
+		hour = to
 	}
-	fmt.Println(to)
 	if to.Hour() > 0 {
 		hours_til_day := time.Duration(to.Hour())
 		to = to.Add(time.Hour * hours_til_day * -1)
+		day = to
 	}
-	fmt.Println(to)
+	return
 }
 
 func (self RedisSimple) ReadBuckets(uids []int64, metric string, aTypes []int64, start_ts int64, end_ts int64, debug string) QueryResponse {
@@ -63,7 +64,10 @@ func (self RedisSimple) ReadBuckets(uids []int64, metric string, aTypes []int64,
 	fmt.Println(min)
 	fmt.Println(hour)
 	fmt.Println(day)
-	bar(end_ts)
+	min, hour, day = bar(end_ts)
+	fmt.Println(day)
+	fmt.Println(hour)
+	fmt.Println(min)
 
 	return qr
 }
