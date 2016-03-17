@@ -8,33 +8,30 @@ import "errors"
 import "pointspaced/psdcontext"
 import "github.com/garyburd/redigo/redis"
 
-type RedisACR struct {
-	from time.Time
-}
+type RedisACR struct{}
 
 type RedisACRRequest struct {
-	TimeBucket  string
-	Granularity string
-	ScoreMin    int
-	ScoreMax    int
+	TimeBucket string
+	ScoreMin   int
+	ScoreMax   int
 }
 
-func (self *RedisACRRequest) QueryMin() int64 {
-	s := strconv.Itoa(self.ScoreMin)
+func (self RedisACRRequest) QueryMin() int {
 	var f string
-	if len(s) == 1 {
-		f = self.TimeBucket + "0" + s
+	if self.ScoreMin < 10 {
+		f = self.TimeBucket + "0" + strconv.Itoa(self.ScoreMin)
 	} else {
-		f = self.TimeBucket + s
+		f = self.TimeBucket + strconv.Itoa(self.ScoreMin)
 	}
-	v, err := strconv.ParseInt(f, 10, 64)
+	v, err := strconv.Atoi(f)
+	//v, err := strconv.ParseInt(f, 10, 64)
 	if err != nil {
 		panic(err)
 	}
 	return v
 }
 
-func (self *RedisACRRequest) QueryMax() int64 {
+func (self RedisACRRequest) QueryMax() int {
 	s := strconv.Itoa(self.ScoreMax)
 	var f string
 	if len(s) == 1 {
@@ -42,17 +39,17 @@ func (self *RedisACRRequest) QueryMax() int64 {
 	} else {
 		f = self.TimeBucket + s
 	}
-	v, err := strconv.ParseInt(f, 10, 64)
+	v, err := strconv.Atoi(f)
+	//v, err := strconv.ParseInt(f, 10, 64)
 	if err != nil {
 		panic(err)
 	}
 	return v
 }
 
-func NewRedisACRRequest(bucket string, granularity string, scoremin int, scoremax int) RedisACRRequest {
+func NewRedisACRRequest(bucket string, scoremin int, scoremax int) RedisACRRequest {
 	r := RedisACRRequest{}
 	r.TimeBucket = bucket
-	r.Granularity = granularity
 	r.ScoreMin = scoremin
 	r.ScoreMax = scoremax
 	return r
@@ -60,31 +57,25 @@ func NewRedisACRRequest(bucket string, granularity string, scoremin int, scorema
 
 func (self RedisACR) ReadBuckets(uids []int64, metric string, aTypes []int64, start_ts int64, end_ts int64, debug string) QueryResponse {
 
-	//	fmt.Println("[Accordion] START", start_ts, "END", end_ts)
+	//fmt.Println("[Accordion] START", start_ts, "END", end_ts)
 	requests := self.requestsForRange(start_ts, end_ts)
-	//	fmt.Println("[Accordion] Requests:", requests)
+	//fmt.Println("[Accordion] Requests:", requests)
 
 	r := psdcontext.Ctx.RedisPool.Get()
 
-	keys := []string{}
-	for k, _ := range requests {
-		keys = append(keys, k)
-	}
-	//	sort.Strings(keys)
-
 	sum := int64(0)
-	for _, k := range keys {
-		request := requests[k]
-		key := "acr:" + "1" + ":" + "0" + ":" + metric + ":" + request.TimeBucket
+	keys := make([]string, len(requests))
+	idx := 0
+	for k, request := range requests {
+		keys[idx] = k
+		key := "acr:1:0:" + metric + ":" + request.TimeBucket
 		r.Send("ZRANGE", key, 0, -1, "WITHSCORES")
+		idx += 1
 	}
-
-	// trigger pipelined call
 	r.Flush()
 
 	for _, k := range keys {
 		request := requests[k]
-
 		response, err := redis.Values(r.Receive())
 		if err != nil {
 			panic(err) // TODO
@@ -92,21 +83,17 @@ func (self RedisACR) ReadBuckets(uids []int64, metric string, aTypes []int64, st
 
 		for idx, vx := range response {
 			if idx%2 == 1 {
-
-				myts, err := strconv.ParseInt(string(response[idx-1].([]uint8)), 10, 64)
+				myts, err := strconv.Atoi(string(response[idx-1].([]uint8)))
+				//myts, err := strconv.ParseInt(string(response[idx-1].([]uint8)), 10, 64)
 				if err != nil {
 					panic(err)
 				}
-
 				if myts >= request.QueryMin() && myts <= request.QueryMax() {
 					intval, err := strconv.ParseInt(string(vx.([]uint8)), 10, 64)
 					if err != nil {
 						panic(err)
 					}
 					sum += intval
-					//fmt.Println("ACCEPT!", myts, intval, request.QueryMin(), request.QueryMax())
-				} else {
-					//fmt.Println("REJECT!", myts, intval, request.QueryMin(), request.QueryMax())
 				}
 			}
 		}
@@ -120,7 +107,7 @@ func (self RedisACR) ReadBuckets(uids []int64, metric string, aTypes []int64, st
 	return qr
 }
 
-func (self *RedisACR) requestsForRange(start_ts int64, end_ts int64) map[string]RedisACRRequest {
+func (self RedisACR) requestsForRange(start_ts int64, end_ts int64) map[string]RedisACRRequest {
 	from := time.Unix(start_ts, 0).UTC()
 	to := time.Unix(end_ts, 0).UTC()
 
@@ -145,8 +132,10 @@ func (self *RedisACR) requestsForRange(start_ts int64, end_ts int64) map[string]
 			break
 		}
 
+		//		fmt.Println("HRM", cursor.Cursor, "TO", cursor.To)
+
 		if cursor.CanJumpYear() {
-			reqs[cursor.YearKey()] = NewRedisACRRequest(cursor.YearKey(), "year", 1, 12)
+			reqs[cursor.YearKey()] = NewRedisACRRequest(cursor.YearKey(), 1, 12)
 			cursor.JumpYear()
 
 		} else if cursor.CanJumpMonth() {
@@ -161,7 +150,7 @@ func (self *RedisACR) requestsForRange(start_ts int64, end_ts int64) map[string]
 				}
 				reqs[cursor.YearKey()] = entry
 			} else {
-				reqs[cursor.YearKey()] = NewRedisACRRequest(cursor.YearKey(), "month", cursor.Month(), cursor.Month())
+				reqs[cursor.YearKey()] = NewRedisACRRequest(cursor.YearKey(), cursor.Month(), cursor.Month())
 			}
 			cursor.JumpMonth()
 
@@ -177,7 +166,7 @@ func (self *RedisACR) requestsForRange(start_ts int64, end_ts int64) map[string]
 				}
 				reqs[cursor.MonthKey()] = entry
 			} else {
-				reqs[cursor.MonthKey()] = NewRedisACRRequest(cursor.MonthKey(), "day", cursor.Day(), cursor.Day())
+				reqs[cursor.MonthKey()] = NewRedisACRRequest(cursor.MonthKey(), cursor.Day(), cursor.Day())
 			}
 
 			cursor.JumpDay()
@@ -194,7 +183,7 @@ func (self *RedisACR) requestsForRange(start_ts int64, end_ts int64) map[string]
 				}
 				reqs[cursor.DayKey()] = entry
 			} else {
-				reqs[cursor.DayKey()] = NewRedisACRRequest(cursor.DayKey(), "hour", cursor.Hour(), cursor.Hour())
+				reqs[cursor.DayKey()] = NewRedisACRRequest(cursor.DayKey(), cursor.Hour(), cursor.Hour())
 			}
 
 			cursor.JumpHour()
@@ -211,7 +200,7 @@ func (self *RedisACR) requestsForRange(start_ts int64, end_ts int64) map[string]
 				}
 				reqs[cursor.HourKey()] = entry
 			} else {
-				reqs[cursor.HourKey()] = NewRedisACRRequest(cursor.HourKey(), "minute", cursor.Minute(), cursor.Minute())
+				reqs[cursor.HourKey()] = NewRedisACRRequest(cursor.HourKey(), cursor.Minute(), cursor.Minute())
 			}
 			cursor.JumpMinute()
 
@@ -227,7 +216,7 @@ func (self *RedisACR) requestsForRange(start_ts int64, end_ts int64) map[string]
 				}
 				reqs[cursor.MinuteKey()] = entry
 			} else {
-				reqs[cursor.MinuteKey()] = NewRedisACRRequest(cursor.MinuteKey(), "second", cursor.Second(), cursor.Second())
+				reqs[cursor.MinuteKey()] = NewRedisACRRequest(cursor.MinuteKey(), cursor.Second(), cursor.Second())
 			}
 			cursor.JumpSecond()
 
@@ -242,7 +231,7 @@ func (self *RedisACR) requestsForRange(start_ts int64, end_ts int64) map[string]
 				}
 				reqs[cursor.MinuteKey()] = entry
 			} else {
-				reqs[cursor.MinuteKey()] = NewRedisACRRequest(cursor.MinuteKey(), "second", cursor.Second(), cursor.Second())
+				reqs[cursor.MinuteKey()] = NewRedisACRRequest(cursor.MinuteKey(), cursor.Second(), cursor.Second())
 			}
 
 			cursor.JumpSecond()
@@ -263,6 +252,8 @@ func (self RedisACR) WritePoint(flavor string, userId int64, value int64, activi
 		return errors.New("invalid arguments")
 	}
 
+	strUserId := strconv.FormatInt(userId, 10)
+
 	buckets, err := self.bucketsForJob(timestamp)
 
 	r := psdcontext.Ctx.RedisPool.Get()
@@ -274,8 +265,6 @@ func (self RedisACR) WritePoint(flavor string, userId int64, value int64, activi
 		for idx, bucket := range buckets {
 			// figure out when this is
 
-			strUserId := strconv.FormatInt(userId, 10)
-
 			set_timestamp := time.Unix(timestamp, int64(0)).UTC().Format("20060102150405")
 			if len(buckets) > idx+1 {
 				set_timestamp = buckets[idx+1]
@@ -285,8 +274,7 @@ func (self RedisACR) WritePoint(flavor string, userId int64, value int64, activi
 
 				strAType := strconv.FormatInt(aType, 10)
 
-				key := "acr:"
-				key = key + strUserId + ":" + strAType + ":" + flavor + ":" + bucket
+				key := "acr:" + strUserId + ":" + strAType + ":" + flavor + ":" + bucket
 
 				//				fmt.Println("\t\t=>", bucket, "ZINCRBY", key, set_timestamp, value)
 

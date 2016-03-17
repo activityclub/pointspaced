@@ -6,10 +6,16 @@ import "testing"
 import "time"
 import "fmt"
 import "math/rand"
+import _ "net/http/pprof"
+import "log"
+import "net/http"
 
 var randomTimestamps = []int64{}
 
 func TestMain(m *testing.M) {
+	go func() {
+		log.Println(http.ListenAndServe("localhost:6060", nil))
+	}()
 	// WARNING DO NOT RUN IN PROD!
 	psdcontext.Ctx.RedisPool = NewRedisPool(":6379")
 
