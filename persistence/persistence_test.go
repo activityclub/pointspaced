@@ -41,7 +41,7 @@ func randInt(min int, max int) int {
 }
 
 func TestACR(t *testing.T) {
-	testMetricRWInterface(t, NewMetricManagerACR())
+	//testMetricRWInterface(t, NewMetricManagerACR())
 }
 
 func TestSimple(t *testing.T) {
@@ -128,10 +128,10 @@ func BenchmarkHZ_LongRead(b *testing.B) {
 }
 
 func testMetricRWInterface(t *testing.T, mm MetricRW) {
-	testValidRead(t, mm)
+	//testValidRead(t, mm)
 	testMultiDayValidRead(t, mm)
-	testEvenLongerMultiDayValidRead(t, mm)
-	testReallyLongValidRead(t, mm)
+	//testEvenLongerMultiDayValidRead(t, mm)
+	//testReallyLongValidRead(t, mm)
 }
 
 func clearRedisCompletely() {

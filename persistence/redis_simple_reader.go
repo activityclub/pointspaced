@@ -22,7 +22,7 @@ func (self RedisSimple) ReadBuckets(uids []int64, metric string, aTypes []int64,
 
 	secs, _, _, days, _ := deltasForRange(start_ts, end_ts)
 
-	var full_days []string
+	var full_days, before_hours, after_hours []string
 	var before, after int64
 	if days > 0.0 && secs > 3600 {
 		before, full_days, after = splitDays(start_ts, end_ts)
@@ -35,6 +35,17 @@ func (self RedisSimple) ReadBuckets(uids []int64, metric string, aTypes []int64,
 			}
 			qr.UserToSum[strconv.FormatInt(uid, 10)] = sum
 		}
+
+		// look at before and after and find full hours
+		before, before_hours, _ = splitHours(start_ts, start_ts+before)
+		// query each bfull_hours
+		_, after_hours, after = splitHours(end_ts-after, end_ts)
+		// query each afull_hours
+
+		fmt.Println(before_hours)
+		fmt.Println(after_hours)
+
+		// no more full hours avail, go down to full mins, then secs
 		buckets := bucketsForRange(start_ts, start_ts+before)
 		//fmt.Println(buckets)
 
@@ -75,6 +86,10 @@ func deltasForRange(start_ts, end_ts int64) (secs int64, mins, hours, days, mont
 	hours = mins / 60.0
 	days = hours / 24.0
 	months = days / 30.0
+	return
+}
+
+func splitHours(start_ts, end_ts int64) (before int64, buckets []string, after int64) {
 	return
 }
 
