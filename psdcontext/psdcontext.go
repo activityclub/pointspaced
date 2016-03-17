@@ -21,6 +21,7 @@ type Config struct {
 type Context struct {
 	Config    Config
 	RedisPool *redis.Pool
+	AgScript  *redis.Script
 }
 
 var Ctx Context

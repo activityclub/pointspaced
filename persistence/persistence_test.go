@@ -9,6 +9,7 @@ import "math/rand"
 import _ "net/http/pprof"
 import "log"
 import "net/http"
+import "github.com/garyburd/redigo/redis"
 
 var randomTimestamps = []int64{}
 
@@ -18,6 +19,36 @@ func TestMain(m *testing.M) {
 	}()
 	// WARNING DO NOT RUN IN PROD!
 	psdcontext.Ctx.RedisPool = NewRedisPool(":6379")
+
+	/* load scripts */
+
+	rx := psdcontext.Ctx.RedisPool.Get()
+	psdcontext.Ctx.AgScript = redis.NewScript(-1, `local sum = 0
+local pos = 1
+for _, key in ipairs(KEYS) do
+  local bulk = redis.call('HGETALL', key)
+  local result = {}
+  local cscore
+  local offset_a = pos
+  local offset_b = pos+1
+  for i, v in ipairs(bulk) do
+    if i % 2 == 1 then
+      cscore = v
+    else
+      if cscore >= ARGV[offset_a] and cscore <= ARGV[offset_b] then
+        sum = sum + v
+      end
+    end
+  end
+  pos = pos +  2
+end
+return sum`)
+
+	err := psdcontext.Ctx.AgScript.Load(rx)
+	if err != nil {
+		panic(err)
+	}
+	rx.Close()
 
 	// generate a crapload of random numbers
 	fmt.Println("[Prep] preparing random numbers")

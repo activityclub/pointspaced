@@ -51,6 +51,6 @@ func NewMetricManagerACR() *MetricManager {
 
 func NewMetricManagerHZ() *MetricManager {
 	mm := MetricManager{}
-	mm.MetricRW = NewRedisHZ()
+	mm.MetricRW = RedisHZ{}
 	return &mm
 }
