@@ -90,6 +90,38 @@ func deltasForRange(start_ts, end_ts int64) (secs int64, mins, hours, days, mont
 }
 
 func splitHours(start_ts, end_ts int64) (before int64, buckets []string, after int64) {
+	from := time.Unix(start_ts, 0)
+	to := time.Unix(end_ts, 0)
+	buckets = make([]string, 0)
+
+	startHour := from.Hour()
+	minCount := 0
+
+	for {
+		if from.Hour() > startHour {
+			break
+		}
+		from = from.Add(time.Minute)
+		minCount += 1
+	}
+
+	before = int64((minCount * 60) + from.Second())
+	from = time.Unix(from.Unix()-int64(from.Second()), 0)
+
+	endHour := to.Hour()
+
+	minCount = -1
+	for {
+		if to.Hour() < endHour {
+			break
+		}
+		to = to.Add(time.Minute * -1)
+		minCount += 1
+	}
+
+	after = int64((minCount * 60) + to.Second())
+	to = time.Unix(to.Unix()-int64(to.Second()), 0)
+
 	return
 }
 
