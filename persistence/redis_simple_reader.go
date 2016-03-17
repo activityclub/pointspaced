@@ -17,16 +17,19 @@ type RedisSimple struct {
 
 func before_times(ts int64) (min, hour, day time.Time) {
 	from := time.Unix(ts, 0)
+	min = from
 	if from.Second() > 0 {
 		secs_til_min := time.Duration(60 - from.Second())
 		from = from.Add(time.Second * secs_til_min)
 		min = from
 	}
+	hour = from
 	if from.Minute() > 0 {
 		mins_til_hour := time.Duration(60 - from.Minute())
 		from = from.Add(time.Minute * mins_til_hour)
 		hour = from
 	}
+	day = from
 	if from.Hour() > 0 {
 		hours_til_day := time.Duration(24 - from.Hour())
 		from = from.Add(time.Hour * hours_til_day)
