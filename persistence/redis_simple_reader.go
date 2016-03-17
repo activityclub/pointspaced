@@ -94,11 +94,10 @@ func splitHours(start_ts, end_ts int64) (before int64, buckets []string, after i
 	to := time.Unix(end_ts, 0)
 	buckets = make([]string, 0)
 
-	startHour := from.Hour()
 	minCount := 0
 
 	for {
-		if from.Hour() > startHour {
+		if from.Unix() > start_ts {
 			break
 		}
 		from = from.Add(time.Minute)
@@ -108,11 +107,9 @@ func splitHours(start_ts, end_ts int64) (before int64, buckets []string, after i
 	before = int64((minCount * 60) + from.Second())
 	from = time.Unix(from.Unix()-int64(from.Second()), 0)
 
-	endHour := to.Hour()
-
 	minCount = -1
 	for {
-		if to.Hour() < endHour {
+		if to.Unix() < end_ts {
 			break
 		}
 		to = to.Add(time.Minute * -1)
