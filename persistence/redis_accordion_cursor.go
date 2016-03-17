@@ -106,52 +106,52 @@ func (self *RedisACRCursor) CanJumpSecond() bool {
 	return true
 }
 
-func (self RedisACRCursor) YearKey() string {
+func (self *RedisACRCursor) YearKey() string {
 	return self._YearKey
 }
 
-func (self RedisACRCursor) MonthKey() string {
+func (self *RedisACRCursor) MonthKey() string {
 	return self._MonthKey
 }
 
-func (self RedisACRCursor) DayKey() string {
+func (self *RedisACRCursor) DayKey() string {
 	return self._DayKey
 }
 
-func (self RedisACRCursor) HourKey() string {
+func (self *RedisACRCursor) HourKey() string {
 	return self._HourKey
 }
 
-func (self RedisACRCursor) MinuteKey() string {
+func (self *RedisACRCursor) MinuteKey() string {
 	return self._MinuteKey
 }
 
-func (self RedisACRCursor) SecondKey() string {
+func (self *RedisACRCursor) SecondKey() string {
 	return self._SecondKey
 }
 
-func (self RedisACRCursor) Year() int {
+func (self *RedisACRCursor) Year() int {
 	return self.Cursor.Year()
 }
 
-func (self RedisACRCursor) Month() int {
+func (self *RedisACRCursor) Month() int {
 	return int(self.Cursor.Month())
 
 }
 
-func (self RedisACRCursor) Day() int {
+func (self *RedisACRCursor) Day() int {
 	return self.Cursor.Day()
 }
 
-func (self RedisACRCursor) Hour() int {
+func (self *RedisACRCursor) Hour() int {
 	return self.Cursor.Hour()
 }
 
-func (self RedisACRCursor) Minute() int {
+func (self *RedisACRCursor) Minute() int {
 	return self.Cursor.Minute()
 }
 
-func (self RedisACRCursor) Second() int {
+func (self *RedisACRCursor) Second() int {
 	return self.Cursor.Second()
 }
 

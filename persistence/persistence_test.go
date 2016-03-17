@@ -48,15 +48,19 @@ func TestSimple(t *testing.T) {
 	testMetricRWInterface(t, NewMetricManagerSimple())
 }
 
-func BenchmarkSimple_OneHundred(b *testing.B) {
+func TestHZ(t *testing.T) {
+	testMetricRWInterface(t, NewMetricManagerHZ())
+}
+
+func BenchmarkSimple_WriteOneHundred(b *testing.B) {
 	benchmarkWriteN(b, NewMetricManagerSimple(), 100)
 }
 
-func BenchmarkSimple_OneThousand(b *testing.B) {
+func BenchmarkSimple_WriteOneThousand(b *testing.B) {
 	benchmarkWriteN(b, NewMetricManagerSimple(), 1000)
 }
 
-func BenchmarkSimple_TenThousand(b *testing.B) {
+func BenchmarkSimple_WriteTenThousand(b *testing.B) {
 	benchmarkWriteN(b, NewMetricManagerSimple(), 10000)
 }
 
@@ -74,15 +78,15 @@ func BenchmarkSimple_LongRead(b *testing.B) {
 
 // --------------
 
-func BenchmarkACR_OneHundred(b *testing.B) {
+func BenchmarkACR_WriteOneHundred(b *testing.B) {
 	benchmarkWriteN(b, NewMetricManagerACR(), 100)
 }
 
-func BenchmarkACR_OneThousand(b *testing.B) {
+func BenchmarkACR_WriteOneThousand(b *testing.B) {
 	benchmarkWriteN(b, NewMetricManagerACR(), 1000)
 }
 
-func BenchmarkACR_TenThousand(b *testing.B) {
+func BenchmarkACR_WriteTenThousand(b *testing.B) {
 	benchmarkWriteN(b, NewMetricManagerACR(), 10000)
 }
 
@@ -96,6 +100,31 @@ func BenchmarkACR_MediumRead(b *testing.B) {
 
 func BenchmarkACR_LongRead(b *testing.B) {
 	benchLongRead(b, NewMetricManagerACR())
+}
+
+// ------
+func BenchmarkHZ_WriteOneHundred(b *testing.B) {
+	benchmarkWriteN(b, NewMetricManagerHZ(), 100)
+}
+
+func BenchmarkHZ_WriteOneThousand(b *testing.B) {
+	benchmarkWriteN(b, NewMetricManagerHZ(), 1000)
+}
+
+func BenchmarkHZ_WriteTenThousand(b *testing.B) {
+	benchmarkWriteN(b, NewMetricManagerHZ(), 10000)
+}
+
+func BenchmarkHZ_ShortRead(b *testing.B) {
+	benchShortRead(b, NewMetricManagerHZ())
+}
+
+func BenchmarkHZ_MediumRead(b *testing.B) {
+	benchMediumRead(b, NewMetricManagerHZ())
+}
+
+func BenchmarkHZ_LongRead(b *testing.B) {
+	benchLongRead(b, NewMetricManagerHZ())
 }
 
 func testMetricRWInterface(t *testing.T, mm MetricRW) {
@@ -254,7 +283,7 @@ func benchShortRead(b *testing.B, mm MetricRW) {
 
 	clearRedisCompletely()
 	for i := 0; i < b.N; i++ {
-		mm.ReadBuckets([]int64{1}, "points", []int64{3}, 1458061005, 1458061010, "0")
+		mm.ReadBuckets([]int64{1}, "steps", []int64{3}, 1458061005, 1458061010, "0")
 	}
 
 }
@@ -263,7 +292,7 @@ func benchMediumRead(b *testing.B, mm MetricRW) {
 
 	clearRedisCompletely()
 	for i := 0; i < b.N; i++ {
-		mm.ReadBuckets([]int64{1}, "points", []int64{3}, 1456262072, 1458162884, "0")
+		mm.ReadBuckets([]int64{1}, "steps", []int64{3}, 1456262072, 1458162884, "0")
 	}
 
 }
@@ -272,7 +301,7 @@ func benchLongRead(b *testing.B, mm MetricRW) {
 
 	clearRedisCompletely()
 	for i := 0; i < b.N; i++ {
-		mm.ReadBuckets([]int64{1}, "points", []int64{3}, 1268082893, 1458061010, "0")
+		mm.ReadBuckets([]int64{1}, "steps", []int64{3}, 1268082893, 1458061010, "0")
 	}
 
 }
