@@ -62,8 +62,10 @@ func (self RedisSimple) ReadBuckets(uids []int64, metric string, aTypes []int64,
 
 	cursor := start_ts
 	min, hour, day := before_times(start_ts)
-	buckets := bucketsForRange(cursor, min.Unix())
-	fmt.Println(buckets)
+	sec_bucket := bucketsForRange(cursor, min.Unix()-1)
+	fmt.Println(sec_bucket)
+	min_buckets := bucketsForRange(min.Unix(), hour.Unix())
+	fmt.Println(min_buckets)
 
 	// from start_ts to min, read sec buckets
 	// from min to hour, read min buckets
@@ -74,7 +76,7 @@ func (self RedisSimple) ReadBuckets(uids []int64, metric string, aTypes []int64,
 	// read 11 hours
 
 	//fmt.Println(min)
-	fmt.Println(hour)
+	//fmt.Println(hour)
 	fmt.Println(day)
 	min, hour, day = after_times(end_ts)
 	//fmt.Println(day)
