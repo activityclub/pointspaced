@@ -16,6 +16,25 @@ type RedisSimple struct {
 }
 
 func (self RedisSimple) ReadBuckets(uids []int64, metric string, aTypes []int64, start_ts int64, end_ts int64, debug string) QueryResponse {
+	qr := QueryResponse{}
+	qr.UserToSum = make(map[string]int64)
+
+	from := time.Unix(start_ts, 0)
+	if from.Second() > 0 {
+		secs_til_min := time.Duration(60 - from.Second())
+		from = from.Add(time.Second * secs_til_min)
+	}
+	fmt.Println(from)
+	if from.Minute() > 0 {
+		min_til_hour := time.Duration(60 - from.Minute())
+		from = from.Add(time.Minute * min_til_hour)
+	}
+	fmt.Println(from)
+
+	return qr
+}
+
+func (self RedisSimple) ReadBuckets2(uids []int64, metric string, aTypes []int64, start_ts int64, end_ts int64, debug string) QueryResponse {
 
 	qr := QueryResponse{}
 	qr.UserToSum = make(map[string]int64)
@@ -33,17 +52,26 @@ func (self RedisSimple) ReadBuckets(uids []int64, metric string, aTypes []int64,
 			for _, atype := range aTypes {
 				sum += sumFromRedis(full_days, uid, atype, metric)
 			}
+
 			qr.UserToSum[strconv.FormatInt(uid, 10)] = sum
 		}
 
 		// look at before and after and find full hours
 		before, before_hours, _ = splitHours(start_ts, start_ts+before)
+		fmt.Println(before, before_hours)
+
 		// query each bfull_hours
 		_, after_hours, after = splitHours(end_ts-after, end_ts)
 		// query each afull_hours
 
-		fmt.Println(before_hours)
-		fmt.Println(after_hours)
+		for _, uid := range uids {
+			sum := int64(0)
+			for _, atype := range aTypes {
+				sum += sumFromRedis(before_hours, uid, atype, metric)
+				sum += sumFromRedis(after_hours, uid, atype, metric)
+			}
+			qr.UserToSum[strconv.FormatInt(uid, 10)] += sum
+		}
 
 		// no more full hours avail, go down to full mins, then secs
 		buckets := bucketsForRange(start_ts, start_ts+before)
