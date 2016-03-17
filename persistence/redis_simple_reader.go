@@ -26,8 +26,13 @@ func (self RedisSimple) ReadBuckets(uids []int64, metric string, aTypes []int64,
 	}
 	fmt.Println(from)
 	if from.Minute() > 0 {
-		min_til_hour := time.Duration(60 - from.Minute())
-		from = from.Add(time.Minute * min_til_hour)
+		mins_til_hour := time.Duration(60 - from.Minute())
+		from = from.Add(time.Minute * mins_til_hour)
+	}
+	fmt.Println(from)
+	if from.Hour() > 0 {
+		hours_til_day := time.Duration(24 - from.Hour())
+		from = from.Add(time.Hour * hours_til_day)
 	}
 	fmt.Println(from)
 
