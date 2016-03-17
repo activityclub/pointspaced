@@ -128,10 +128,10 @@ func BenchmarkHZ_LongRead(b *testing.B) {
 }
 
 func testMetricRWInterface(t *testing.T, mm MetricRW) {
-	//testValidRead(t, mm)
-	//testMultiDayValidRead(t, mm)
+	testValidRead(t, mm)
+	testMultiDayValidRead(t, mm)
 	testEvenLongerMultiDayValidRead(t, mm)
-	//testReallyLongValidRead(t, mm)
+	testReallyLongValidRead(t, mm)
 }
 
 func clearRedisCompletely() {
@@ -240,11 +240,10 @@ func testEvenLongerMultiDayValidRead(t *testing.T, mm MetricRW) {
 		fmt.Println("res", res)
 		t.Errorf("Incorrect Sum.  Expected 322, Received %d", res.UserToSum["1"])
 	}
-	/*
-		res = mm.ReadBuckets([]int64{1}, "points", []int64{3}, 1451635205, 1458061010, "0")
-		if res.UserToSum["1"] != 221 {
-			t.Errorf("Incorrect Sum.  Expected 221, Received %d", res.UserToSum["1"])
-		}*/
+	res = mm.ReadBuckets([]int64{1}, "points", []int64{3}, 1451635205, 1458061010, "0")
+	if res.UserToSum["1"] != 221 {
+		t.Errorf("Incorrect Sum.  Expected 221, Received %d", res.UserToSum["1"])
+	}
 }
 
 func shuffleTsArray() []int64 {

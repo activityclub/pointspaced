@@ -84,6 +84,12 @@ func (self RedisSimple) ReadBuckets(uids []int64, metric string, aTypes []int64,
 	qr := QueryResponse{}
 	qr.UserToSum = make(map[string]int64)
 
+	if end_ts-start_ts < 3600 {
+		sec_buckets := bucketsForRange(start_ts, end_ts)
+		addSumMinBuckets(sec_buckets, uids, metric, aTypes, &qr)
+		return qr
+	}
+
 	cursor := start_ts
 	min, hour, bday := before_times(start_ts)
 	sec_buckets := bucketsForRange(cursor, min.Unix()-1)
