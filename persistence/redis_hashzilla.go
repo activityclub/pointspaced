@@ -8,7 +8,57 @@ import "errors"
 import "pointspaced/psdcontext"
 import "github.com/garyburd/redigo/redis"
 
-type RedisHZ struct{}
+type RedisHZ struct {
+	AgScript *redis.Script
+}
+
+func NewRedisHZ() RedisHZ {
+	r := RedisHZ{}
+	rx := psdcontext.Ctx.RedisPool.Get()
+	/*
+			r.AgScript = redis.NewScript(1, `local sum = 0
+		local cscore
+		for i, v in ipairs(redis.call('HGETALL', KEYS[1])) do
+		  if i % 2 == 1 then
+		    cscore = v
+		  else
+		    if cscore >= ARGV[1]  and
+		       cscore <= ARGV[2] then
+		        sum = sum + v
+		      end
+		  end
+		end
+		return sum`)
+	*/
+
+	r.AgScript = redis.NewScript(-1, `local sum = 0
+local pos = 1
+for _, key in ipairs(KEYS) do
+  local bulk = redis.call('HGETALL', key)
+  local result = {}
+  local cscore
+  local offset_a = pos
+  local offset_b = pos+1
+  for i, v in ipairs(bulk) do
+    if i % 2 == 1 then
+      cscore = v
+    else
+      if cscore >= ARGV[offset_a] and cscore <= ARGV[offset_b] then
+        sum = sum + v
+      end
+    end
+  end
+  pos = pos +  2
+end
+return sum`)
+
+	err := r.AgScript.Load(rx)
+	if err != nil {
+		panic(err)
+	}
+	rx.Close()
+	return r
+}
 
 type RedisHZRequest struct {
 	TimeBucket string
@@ -16,19 +66,22 @@ type RedisHZRequest struct {
 	ScoreMax   int
 }
 
-func (self RedisHZRequest) QueryMin() int {
+func (self RedisHZRequest) QueryMin() string {
 	var f string
 	if self.ScoreMin < 10 {
 		f = self.TimeBucket + "0" + strconv.Itoa(self.ScoreMin)
 	} else {
 		f = self.TimeBucket + strconv.Itoa(self.ScoreMin)
 	}
-	v, err := strconv.Atoi(f)
-	//v, err := strconv.ParseInt(f, 10, 64)
-	if err != nil {
-		panic(err)
-	}
-	return v
+	return f
+	/*
+		v, err := strconv.Atoi(f)
+		//v, err := strconv.ParseInt(f, 10, 64)
+		if err != nil {
+			panic(err)
+		}
+		return v
+	*/
 }
 
 func (self RedisHZRequest) QueryMin2() string {
@@ -41,7 +94,7 @@ func (self RedisHZRequest) QueryMin2() string {
 	return f
 }
 
-func (self RedisHZRequest) QueryMax() int {
+func (self RedisHZRequest) QueryMax() string {
 	s := strconv.Itoa(self.ScoreMax)
 	var f string
 	if len(s) == 1 {
@@ -49,12 +102,15 @@ func (self RedisHZRequest) QueryMax() int {
 	} else {
 		f = self.TimeBucket + s
 	}
-	v, err := strconv.Atoi(f)
-	//v, err := strconv.ParseInt(f, 10, 64)
-	if err != nil {
-		panic(err)
-	}
-	return v
+	return f
+	/*
+		v, err := strconv.Atoi(f)
+		//v, err := strconv.ParseInt(f, 10, 64)
+		if err != nil {
+			panic(err)
+		}
+		return v
+	*/
 }
 
 func NewRedisHZRequest(bucket string, scoremin int, scoremax int) RedisHZRequest {
@@ -74,54 +130,85 @@ func (self RedisHZ) ReadBuckets(uids []int64, metric string, aTypes []int64, sta
 	r := psdcontext.Ctx.RedisPool.Get()
 
 	sum := int64(0)
-	keys := make([]string, len(requests))
-	flavs := make([]int, len(requests))
-	idx := 0
-	for k, request := range requests {
-		keys[idx] = k
+	//	keys := make([]string, len(requests))
+	//	flavs := make([]int, len(requests))
+	//	idx := 0
+
+	cmd := []interface{}{strconv.Itoa(len(requests))}
+	args := []interface{}{}
+
+	for _, request := range requests {
+		//		keys[idx] = k
 		key := "hz:1:0:" + metric + ":" + request.TimeBucket
 
-		// can we optimize our gets?
-		delta := request.QueryMax() - request.QueryMin()
-		//fmt.Println("[DELTA]", delta, request.TimeBucket, request.QueryMax(), request.QueryMin())
-		if delta+1 < 6 {
-			flavs[idx] = 1
+		cmd = append(cmd, key)
+		args = append(args, request.QueryMin(), request.QueryMax())
+		//		args = append(args, request.QueryMax())
 
-			fields := make([]interface{}, delta+2)
-			fields[0] = key
-			for {
-				if delta < 0 {
-					break
+		/*
+
+			// can we optimize our gets?
+			delta := request.QueryMax() - request.QueryMin()
+			//fmt.Println("[DELTA]", delta, request.TimeBucket, request.QueryMax(), request.QueryMin())
+			if delta+1 < 6 {
+				flavs[idx] = 1
+
+				fields := make([]interface{}, delta+2)
+				fields[0] = key
+				for {
+					if delta < 0 {
+						break
+					}
+					fields[delta+1] = request.QueryMin() + delta
+					delta -= 1
 				}
-				fields[delta+1] = request.QueryMin() + delta
-				delta -= 1
-			}
 
-			if len(fields) > 1 {
-				r.Send("HMGET", fields...)
+				if len(fields) > 1 {
+					r.Send("HMGET", fields...)
+				} else {
+					flavs[idx] = 3
+				}
 			} else {
-				flavs[idx] = 3
+				flavs[idx] = 2
+				r.Send("HGETALL", key)
 			}
-		} else {
-			flavs[idx] = 2
-			r.Send("HGETALL", key)
-		}
-		idx += 1
+		*/
+
+		// In a function, use the script Do method to evaluate the script. The Do
+		// method optimistically uses the EVALSHA command. If the script is not
+		// loaded, then the Do method falls back to the EVAL command.
+		//reply, err = getScript.Do(c, "foo")
+
+		//	self.AgScript.SendHash(r, key, request.QueryMin(), request.QueryMax())
+
+		//idx += 1
 	}
+	//r.Flush()
+
+	//	for _, a := range args {
+	cmd = append(cmd, args...)
+	//	}
+
+	self.AgScript.SendHash(r, cmd...)
 	r.Flush()
+	response, err := redis.Int64(r.Receive())
+	if err != nil {
+		panic(err)
+	}
+	sum += response
 
-	for kidx, k := range keys {
+	//for _, _ = range requests {
 
-		if flavs[kidx] == 3 {
-			continue
-		}
+	//if flavs[kidx] == 3 {
+	//	continue
+	//}
 
-		request := requests[k]
-		response, err := redis.Values(r.Receive())
-		if err != nil {
-			panic(err) // TODO
-		}
-
+	//request := requests[k]
+	//		response, err := redis.Int64(r.Receive())
+	//	if err != nil {
+	//	panic(err) // TODO
+	//	}
+	/*
 		if flavs[kidx] == 1 {
 			// handle hmget response
 			for _, vx := range response {
@@ -155,7 +242,10 @@ func (self RedisHZ) ReadBuckets(uids []int64, metric string, aTypes []int64, sta
 				}
 			}
 		}
-	}
+	*/
+	//		sum += response
+
+	//	}
 
 	qr := QueryResponse{}
 	qr.UserToSum = map[string]int64{}
