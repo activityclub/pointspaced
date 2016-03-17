@@ -69,35 +69,25 @@ func addSumNormalBuckets(buckets []string, uids []int64, metric string, aTypes [
 		qr.UserToSum[strconv.FormatInt(uid, 10)] += sum
 	}
 }
-func addSumMinBuckets(buckets map[string][]int, uids []int64, metric string, aTypes []int64, qr *QueryResponse) {
-	for _, uid := range uids {
-		sum := int64(0)
-		for _, atype := range aTypes {
-			sum += sumFromRedisMinBuckets(buckets, uid, atype, metric)
-		}
-
-		qr.UserToSum[strconv.FormatInt(uid, 10)] += sum
-	}
-}
 
 func (self RedisSimple) ReadBuckets(uids []int64, metric string, aTypes []int64, start_ts int64, end_ts int64, debug string) QueryResponse {
 	qr := QueryResponse{}
 	qr.UserToSum = make(map[string]int64)
 
 	if end_ts-start_ts < 3600 {
-		sec_buckets := bucketsForRange(start_ts, end_ts)
-		addSumMinBuckets(sec_buckets, uids, metric, aTypes, &qr)
+		sec_buckets := bucketsForSecs(start_ts, end_ts)
+		addSumNormalBuckets(sec_buckets, uids, metric, aTypes, &qr)
 		return qr
 	}
 
 	cursor := start_ts
 	min, hour, bday := before_times(start_ts)
-	sec_buckets := bucketsForRange(cursor, min.Unix()-1)
-	addSumMinBuckets(sec_buckets, uids, metric, aTypes, &qr)
+	sec_buckets := bucketsForSecs(cursor, min.Unix()-1)
+	addSumNormalBuckets(sec_buckets, uids, metric, aTypes, &qr)
 
 	//fmt.Println(sec_buckets)
-	min_buckets := bucketsForRange(min.Unix(), hour.Unix()-1)
-	addSumMinBuckets(min_buckets, uids, metric, aTypes, &qr)
+	min_buckets := bucketsForMins(min.Unix(), hour.Unix()-1)
+	addSumNormalBuckets(min_buckets, uids, metric, aTypes, &qr)
 	//fmt.Println(min_buckets)
 
 	hour_buckets := bucketsForHours(hour.Unix(), bday.Unix()-1)
@@ -114,11 +104,11 @@ func (self RedisSimple) ReadBuckets(uids []int64, metric string, aTypes []int64,
 	addSumNormalBuckets(day_buckets, uids, metric, aTypes, &qr)
 	//fmt.Println(day_buckets)
 
-	sec_buckets = bucketsForRange(min.Unix(), end_ts)
-	addSumMinBuckets(sec_buckets, uids, metric, aTypes, &qr)
+	sec_buckets = bucketsForSecs(min.Unix(), end_ts)
+	addSumNormalBuckets(sec_buckets, uids, metric, aTypes, &qr)
 	//fmt.Println(sec_buckets)
-	min_buckets = bucketsForRange(hour.Unix(), min.Unix()-1)
-	addSumMinBuckets(min_buckets, uids, metric, aTypes, &qr)
+	min_buckets = bucketsForMins(hour.Unix(), min.Unix()-1)
+	addSumNormalBuckets(min_buckets, uids, metric, aTypes, &qr)
 	//fmt.Println(min_buckets)
 
 	hour_buckets = bucketsForHours(aday.Unix(), hour.Unix()-1)
@@ -167,10 +157,8 @@ func bucketsForHours(start_ts, end_ts int64) []string {
 	return results
 }
 
-func bucketsForRange(start_ts, end_ts int64) map[string][]int {
-	min_hash := make(map[string]int)
-	max_hash := make(map[string]int)
-	final_hash := make(map[string][]int)
+func bucketsForMins(start_ts, end_ts int64) []string {
+	results := make([]string, 0)
 
 	from := time.Unix(start_ts, 0)
 	to := time.Unix(end_ts, 0)
@@ -180,33 +168,34 @@ func bucketsForRange(start_ts, end_ts int64) map[string][]int {
 			break
 		}
 		bucket := bucket_for_min(from)
-		min_hash[bucket] = -1
-		from = from.Add(time.Second)
+		results = append(results, bucket)
+		from = from.Add(time.Minute)
 	}
 
-	from = time.Unix(start_ts, 0)
+	return results
+}
+
+func bucketsForSecs(start_ts, end_ts int64) []string {
+	results := make([]string, 0)
+
+	from := time.Unix(start_ts, 0)
+	to := time.Unix(end_ts, 0)
+
 	for {
 		if from.Unix() > to.Unix() {
 			break
 		}
-		bucket := bucket_for_min(from)
-		if min_hash[bucket] == -1 {
-			min_hash[bucket] = from.Second()
-		}
-		max_hash[bucket] = from.Second()
+		bucket := bucket_for_sec(from)
+		results = append(results, bucket)
 		from = from.Add(time.Second)
 	}
 
-	for key := range min_hash {
-		min := min_hash[key]
-		if min == -1 {
-			min = 0
-		}
-		max := max_hash[key]
-		final_hash[key] = []int{min, max}
-	}
+	return results
+}
 
-	return final_hash
+func bucket_for_month(t time.Time) string {
+	format := t.Format("200601")
+	return fmt.Sprintf("%s", format)
 }
 func bucket_for_day(t time.Time) string {
 	format := t.Format("20060102")
@@ -222,44 +211,16 @@ func bucket_for_min(t time.Time) string {
 	format := t.Format("200601021504")
 	return fmt.Sprintf("%s", format)
 }
+func bucket_for_sec(t time.Time) string {
+	format := t.Format("20060102150405")
+	return fmt.Sprintf("%s", format)
+}
 
 func makeKey(uid, atype int64, bucket, metric string) string {
 	key := "psd:"
 	strAType := strconv.FormatInt(atype, 10)
 	key = key + strconv.FormatInt(uid, 10) + ":" + strAType + ":" + metric + ":" + bucket
 	return key
-}
-
-func sumFromRedisMinBuckets(buckets map[string][]int, uid, atype int64, metric string) int64 {
-	r := psdcontext.Ctx.RedisPool.Get()
-	ordered_list := make([]string, 0)
-	for b := range buckets {
-		key := makeKey(uid, atype, b, metric)
-		r.Send("ZRANGE", key, "0", "-1", "WITHSCORES")
-		ordered_list = append(ordered_list, b)
-	}
-	r.Flush()
-	sum := int64(0)
-	for _, b := range ordered_list {
-		val := buckets[b]
-		min := val[0]
-		max := val[1]
-
-		theMap, err := redis.IntMap(r.Receive())
-		if err != nil {
-			panic(err)
-		}
-		for mkey := range theMap {
-			sec_total := theMap[mkey]
-			mkey_int, _ := strconv.ParseInt(mkey, 10, 32)
-
-			if int(mkey_int) >= min && int(mkey_int) <= max {
-				sum += int64(sec_total)
-			}
-		}
-	}
-	r.Close()
-	return sum
 }
 
 func sumFromRedis(buckets []string, uid, atype int64, metric string) int64 {

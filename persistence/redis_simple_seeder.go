@@ -19,7 +19,7 @@ func (self RedisSeeder) WritePoint(flavor string, userId int64, value int64, act
 	bucket_for_hour := bucket_for_hour(t)
 	bucket_for_day := bucket_for_day(t)
 
-	addToBucketWithSeconds(userId, 0, value, bucket_for_min, flavor, t.Second())
+	//addToBucketWithSeconds(userId, 0, value, bucket_for_min, flavor, t.Second())
 	addToBucket(userId, 0, value, bucket_for_hour, flavor)
 	addToBucket(userId, 0, value, bucket_for_day, flavor)
 
