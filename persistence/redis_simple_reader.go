@@ -15,7 +15,7 @@ type SimpleSum struct {
 type RedisSimple struct {
 }
 
-func foo(ts int64) (min, hour, day time.Time) {
+func before_times(ts int64) (min, hour, day time.Time) {
 	from := time.Unix(ts, 0)
 	if from.Second() > 0 {
 		secs_til_min := time.Duration(60 - from.Second())
@@ -36,7 +36,7 @@ func foo(ts int64) (min, hour, day time.Time) {
 	return
 }
 
-func bar(ts int64) (min, hour, day time.Time) {
+func after_times(ts int64) (min, hour, day time.Time) {
 	to := time.Unix(ts, 0)
 	if to.Second() > 0 {
 		secs_til_min := time.Duration(to.Second())
@@ -60,14 +60,26 @@ func (self RedisSimple) ReadBuckets(uids []int64, metric string, aTypes []int64,
 	qr := QueryResponse{}
 	qr.UserToSum = make(map[string]int64)
 
-	min, hour, day := foo(start_ts)
-	fmt.Println(min)
+	cursor := start_ts
+	min, hour, day := before_times(start_ts)
+	buckets := bucketsForRange(cursor, min.Unix())
+	fmt.Println(buckets)
+
+	// from start_ts to min, read sec buckets
+	// from min to hour, read min buckets
+	// from hour to day, read hour buckets
+
+	// read 13 seconds
+	// read 28 mins
+	// read 11 hours
+
+	//fmt.Println(min)
 	fmt.Println(hour)
 	fmt.Println(day)
-	min, hour, day = bar(end_ts)
-	fmt.Println(day)
-	fmt.Println(hour)
-	fmt.Println(min)
+	min, hour, day = after_times(end_ts)
+	//fmt.Println(day)
+	//fmt.Println(hour)
+	//fmt.Println(min)
 
 	return qr
 }
