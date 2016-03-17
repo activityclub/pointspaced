@@ -61,27 +61,27 @@ func (self RedisSimple) ReadBuckets(uids []int64, metric string, aTypes []int64,
 	qr.UserToSum = make(map[string]int64)
 
 	cursor := start_ts
-	min, hour, day := before_times(start_ts)
+	min, hour, bday := before_times(start_ts)
 	sec_bucket := bucketsForRange(cursor, min.Unix()-1)
 	fmt.Println(sec_bucket)
 	min_buckets := bucketsForRange(min.Unix(), hour.Unix()-1)
 	fmt.Println(min_buckets)
 
-	hour_buckets := bucketsForHours(hour.Unix(), day.Unix()-1)
-
+	hour_buckets := bucketsForHours(hour.Unix(), bday.Unix()-1)
 	fmt.Println(hour_buckets)
-	// from start_ts to min, read sec buckets
-	// from min to hour, read min buckets
-	// from hour to day, read hour buckets
 
-	// read 13 seconds
-	// read 28 mins
-	// read 11 hours
+	fmt.Println("before_times: ", min, hour, bday)
+	fmt.Println(bday)
+	var aday time.Time
+	min, hour, aday = after_times(end_ts)
+	fmt.Println("after_times: ", min, hour, aday)
+	sec_bucket = bucketsForRange(min.Unix(), end_ts)
+	fmt.Println(sec_bucket)
+	min_buckets = bucketsForRange(hour.Unix(), min.Unix()-1)
+	fmt.Println(min_buckets)
 
-	//fmt.Println(min)
-	//fmt.Println(hour)
-	fmt.Println(day)
-	min, hour, day = after_times(end_ts)
+	hour_buckets = bucketsForHours(aday.Unix(), hour.Unix()-1)
+	fmt.Println(hour_buckets)
 	//fmt.Println(day)
 	//fmt.Println(hour)
 	//fmt.Println(min)
