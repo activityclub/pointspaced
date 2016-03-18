@@ -70,9 +70,45 @@ func addSumNormalBuckets(buckets []string, uids []int64, metric string, aTypes [
 	}
 }
 
+func determineRange(start_ts, end_ts int64) []string {
+	delta := end_ts - start_ts
+	list := make([]string, 0)
+
+	list = append(list, "sec")
+	if delta/60 > 0 {
+		list = append(list, "min")
+	}
+	if delta/3600 > 0 {
+		list = append(list, "hour")
+	}
+	if delta/86400 > 0 {
+		list = append(list, "day")
+	}
+	if delta/2592000 > 0 {
+		list = append(list, "month")
+	}
+	if delta/31536000 > 0 {
+		list = append(list, "year")
+	}
+
+	i := len(list) - 1
+	for {
+		list = append(list, "year")
+		i -= 1
+		if i == 1 {
+			break
+		}
+
+	}
+
+	return list
+}
+
 func (self RedisSimple) ReadBuckets(uids []int64, metric string, aTypes []int64, start_ts int64, end_ts int64, debug string) QueryResponse {
 	qr := QueryResponse{}
 	qr.UserToSum = make(map[string]int64)
+
+	timeRanges := determineRange(start_ts, end_ts)
 
 	if end_ts-start_ts < 3600 {
 		sec_buckets := bucketsForSecs(start_ts, end_ts)
