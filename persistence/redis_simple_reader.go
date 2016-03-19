@@ -91,11 +91,16 @@ func determineRange(start_ts, end_ts int64) []string {
 		list = append(list, "year")
 	}
 
+	if len(list) == 1 {
+		list = append(list, "sec")
+		return list
+	}
+
 	i := len(list) - 1
 	for {
-		list = append(list, "year")
 		i -= 1
-		if i == 1 {
+		list = append(list, list[i])
+		if i == 0 {
 			break
 		}
 
@@ -109,6 +114,7 @@ func (self RedisSimple) ReadBuckets(uids []int64, metric string, aTypes []int64,
 	qr.UserToSum = make(map[string]int64)
 
 	timeRanges := determineRange(start_ts, end_ts)
+	//fmt.Println(timeRanges)
 
 	if end_ts-start_ts < 3600 {
 		sec_buckets := bucketsForSecs(start_ts, end_ts)

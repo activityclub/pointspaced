@@ -159,7 +159,7 @@ func BenchmarkHZ_LongRead(b *testing.B) {
 }
 
 func testMetricRWInterface(t *testing.T, mm MetricRW) {
-	//testValidRead(t, mm)
+	testValidRead(t, mm)
 	//testMultiDayValidRead(t, mm)
 	//testEvenLongerMultiDayValidRead(t, mm)
 	testReallyLongValidRead(t, mm)
