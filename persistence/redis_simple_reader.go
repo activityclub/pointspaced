@@ -249,10 +249,47 @@ func readBucketsType5(uids []int64, metric string, aTypes []int64, start_ts int6
 	return qr
 }
 
+func readBucketsType6(uids []int64, metric string, aTypes []int64, start_ts int64, end_ts int64) QueryResponse {
+	qr := QueryResponse{}
+	qr.UserToSum = make(map[string]int64)
+
+	min, hour, day, month, byear := before_times(start_ts)
+
+	sec_buckets := bucketsForSecs(start_ts, min.Unix()-1)
+	min_buckets := bucketsForMins(min.Unix(), hour.Unix()-1)
+	hour_buckets := bucketsForHours(hour.Unix(), day.Unix()-1)
+	day_buckets := bucketsForDays(day.Unix(), month.Unix()-1)
+	month_buckets := bucketsForMonths(month.Unix(), byear.Unix()-1)
+
+	addSumNormalBuckets(sec_buckets, uids, metric, aTypes, &qr)
+	addSumNormalBuckets(min_buckets, uids, metric, aTypes, &qr)
+	addSumNormalBuckets(hour_buckets, uids, metric, aTypes, &qr)
+	addSumNormalBuckets(day_buckets, uids, metric, aTypes, &qr)
+
+	var ayear time.Time
+	min, hour, day, month, ayear = after_times(end_ts)
+
+	sec_buckets = bucketsForSecs(min.Unix(), end_ts)
+	min_buckets = bucketsForMins(hour.Unix(), min.Unix()-1)
+	hour_buckets = bucketsForHours(day.Unix(), hour.Unix()-1)
+	day_buckets = bucketsForDays(month.Unix(), day.Unix()-1)
+	month_buckets = bucketsForMonths(ayear.Unix(), month.Unix()-1)
+	year_buckets := bucketsForMonths(byear.Unix(), ayear.Unix()-1)
+
+	addSumNormalBuckets(sec_buckets, uids, metric, aTypes, &qr)
+	addSumNormalBuckets(min_buckets, uids, metric, aTypes, &qr)
+	addSumNormalBuckets(day_buckets, uids, metric, aTypes, &qr)
+	addSumNormalBuckets(hour_buckets, uids, metric, aTypes, &qr)
+	addSumNormalBuckets(month_buckets, uids, metric, aTypes, &qr)
+	addSumNormalBuckets(year_buckets, uids, metric, aTypes, &qr)
+
+	return qr
+}
+
 func (self RedisSimple) ReadBuckets(uids []int64, metric string, aTypes []int64, start_ts int64, end_ts int64, debug string) QueryResponse {
 
 	timeRangeType := determineRangeType(start_ts, end_ts)
-	fmt.Println("type ", timeRangeType)
+	//fmt.Println("type ", timeRangeType)
 
 	if timeRangeType == 1 {
 		qr := QueryResponse{}
@@ -274,10 +311,36 @@ func (self RedisSimple) ReadBuckets(uids []int64, metric string, aTypes []int64,
 		return readBucketsType5(uids, metric, aTypes, start_ts, end_ts)
 	}
 	if timeRangeType == 6 {
-		return readBucketsType4(uids, metric, aTypes, start_ts, end_ts)
+		return readBucketsType6(uids, metric, aTypes, start_ts, end_ts)
 	}
 
 	return QueryResponse{}
+}
+
+func bucketsForYears(start_ts, end_ts int64) []string {
+	results := make([]string, 0)
+
+	from := time.Unix(start_ts, 0)
+	to := time.Unix(end_ts, 0)
+
+	for {
+		if from.Unix() > to.Unix() {
+			break
+		}
+		bucket := bucket_for_year(from)
+		results = append(results, bucket)
+
+		curYear := from.Year()
+
+		for {
+			if from.Year() > curYear {
+				break
+			}
+			from = from.Add(time.Hour * 24 * 365)
+		}
+	}
+
+	return results
 }
 
 func bucketsForMonths(start_ts, end_ts int64) []string {
@@ -378,6 +441,10 @@ func bucketsForSecs(start_ts, end_ts int64) []string {
 	return results
 }
 
+func bucket_for_year(t time.Time) string {
+	format := t.Format("2006")
+	return fmt.Sprintf("%s", format)
+}
 func bucket_for_month(t time.Time) string {
 	format := t.Format("200601")
 	return fmt.Sprintf("%s", format)

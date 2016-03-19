@@ -15,18 +15,21 @@ func (self RedisSimple) WritePoint(flavor string, userId int64, value int64, act
 	bucket_for_hour := bucket_for_hour(t)
 	bucket_for_day := bucket_for_day(t)
 	bucket_for_month := bucket_for_month(t)
+	bucket_for_year := bucket_for_year(t)
 
 	addToBucket(userId, 0, value, bucket_for_sec, flavor)
 	addToBucket(userId, 0, value, bucket_for_min, flavor)
 	addToBucket(userId, 0, value, bucket_for_hour, flavor)
 	addToBucket(userId, 0, value, bucket_for_day, flavor)
 	addToBucket(userId, 0, value, bucket_for_month, flavor)
+	addToBucket(userId, 0, value, bucket_for_year, flavor)
 
 	addToBucket(userId, activityTypeId, value, bucket_for_sec, flavor)
 	addToBucket(userId, activityTypeId, value, bucket_for_min, flavor)
 	addToBucket(userId, activityTypeId, value, bucket_for_hour, flavor)
 	addToBucket(userId, activityTypeId, value, bucket_for_day, flavor)
 	addToBucket(userId, activityTypeId, value, bucket_for_month, flavor)
+	addToBucket(userId, activityTypeId, value, bucket_for_year, flavor)
 	return nil
 }
 
