@@ -116,45 +116,46 @@ func (self RedisSimple) ReadBuckets(uids []int64, metric string, aTypes []int64,
 	timeRanges := determineRange(start_ts, end_ts)
 	//fmt.Println(timeRanges)
 
-	if end_ts-start_ts < 3600 {
+	if len(timeRanges) == 2 {
 		sec_buckets := bucketsForSecs(start_ts, end_ts)
 		addSumNormalBuckets(sec_buckets, uids, metric, aTypes, &qr)
 		return qr
 	}
 
-	cursor := start_ts
 	min, hour, bday := before_times(start_ts)
-	sec_buckets := bucketsForSecs(cursor, min.Unix()-1)
-	addSumNormalBuckets(sec_buckets, uids, metric, aTypes, &qr)
 
-	//fmt.Println(sec_buckets)
+	sec_buckets := bucketsForSecs(start_ts, min.Unix()-1)
 	min_buckets := bucketsForMins(min.Unix(), hour.Unix()-1)
-	addSumNormalBuckets(min_buckets, uids, metric, aTypes, &qr)
-	//fmt.Println(min_buckets)
-
 	hour_buckets := bucketsForHours(hour.Unix(), bday.Unix()-1)
-	addSumNormalBuckets(hour_buckets, uids, metric, aTypes, &qr)
-	//fmt.Println(hour_buckets)
 
+	addSumNormalBuckets(sec_buckets, uids, metric, aTypes, &qr)
+	addSumNormalBuckets(min_buckets, uids, metric, aTypes, &qr)
+	addSumNormalBuckets(hour_buckets, uids, metric, aTypes, &qr)
+
+	//fmt.Println(min_buckets)
+	//fmt.Println(sec_buckets)
+	//fmt.Println(hour_buckets)
 	//fmt.Println("before_times: ", min, hour, bday)
 	//fmt.Println(bday)
+
 	var aday time.Time
 	min, hour, aday = after_times(end_ts)
+
 	//fmt.Println("after_times: ", min, hour, aday)
 
 	day_buckets := bucketsForDays(bday.Unix(), aday.Unix()-1)
-	addSumNormalBuckets(day_buckets, uids, metric, aTypes, &qr)
-	//fmt.Println(day_buckets)
-
 	sec_buckets = bucketsForSecs(min.Unix(), end_ts)
-	addSumNormalBuckets(sec_buckets, uids, metric, aTypes, &qr)
-	//fmt.Println(sec_buckets)
 	min_buckets = bucketsForMins(hour.Unix(), min.Unix()-1)
-	addSumNormalBuckets(min_buckets, uids, metric, aTypes, &qr)
-	//fmt.Println(min_buckets)
-
 	hour_buckets = bucketsForHours(aday.Unix(), hour.Unix()-1)
+
+	addSumNormalBuckets(sec_buckets, uids, metric, aTypes, &qr)
+	addSumNormalBuckets(min_buckets, uids, metric, aTypes, &qr)
+	addSumNormalBuckets(day_buckets, uids, metric, aTypes, &qr)
 	addSumNormalBuckets(hour_buckets, uids, metric, aTypes, &qr)
+
+	//fmt.Println(day_buckets)
+	//fmt.Println(min_buckets)
+	//fmt.Println(sec_buckets)
 	//fmt.Println(hour_buckets)
 	//fmt.Println(day)
 	//fmt.Println(hour)
