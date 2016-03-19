@@ -54,7 +54,7 @@ func before_times(ts int64) (min, hour, day, month, year time.Time) {
 	return
 }
 
-func after_times(ts int64) (min, hour, day time.Time) {
+func after_times(ts int64) (min, hour, day, month, year time.Time) {
 	to := time.Unix(ts, 0)
 	if to.Second() > 0 {
 		secs_til_min := time.Duration(to.Second())
@@ -71,6 +71,20 @@ func after_times(ts int64) (min, hour, day time.Time) {
 		to = to.Add(time.Hour * hours_til_day * -1)
 		day = to
 	}
+	for {
+		if to.Day() == 1 {
+			break
+		}
+		to = to.Add(time.Hour * -24)
+	}
+	month = to
+	for {
+		if to.Day() == 1 && to.Month() == 1 {
+			break
+		}
+		to = to.Add(time.Hour * -24)
+	}
+	year = to
 	return
 }
 
@@ -110,9 +124,7 @@ func readBucketsType4(uids []int64, metric string, aTypes []int64, start_ts int6
 	qr := QueryResponse{}
 	qr.UserToSum = make(map[string]int64)
 
-	min, hour, bday, month, year := before_times(start_ts)
-	fmt.Println(month)
-	fmt.Println(year)
+	min, hour, bday, _, _ := before_times(start_ts)
 
 	sec_buckets := bucketsForSecs(start_ts, min.Unix()-1)
 	min_buckets := bucketsForMins(min.Unix(), hour.Unix()-1)
@@ -129,7 +141,7 @@ func readBucketsType4(uids []int64, metric string, aTypes []int64, start_ts int6
 	//fmt.Println(bday)
 
 	var aday time.Time
-	min, hour, aday = after_times(end_ts)
+	min, hour, aday, _, _ = after_times(end_ts)
 
 	//fmt.Println("after_times: ", min, hour, aday)
 
