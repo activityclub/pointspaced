@@ -35,13 +35,20 @@ func before_times(ts int64) (min, hour, day, month, year time.Time) {
 		from = from.Add(time.Hour * hours_til_day)
 		day = from
 	}
-	month = from
-	fmt.Println(from.Month())
-	if from.Month() > 1 {
+	for {
+		if from.Day() == 1 {
+			break
+		}
 		from = from.Add(time.Hour * 24)
-		month = from
 	}
+	month = from
 
+	for {
+		if from.Day() == 1 && from.Month() == 1 {
+			break
+		}
+		from = from.Add(time.Hour * 24)
+	}
 	year = from
 
 	return
