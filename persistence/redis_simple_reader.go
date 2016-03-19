@@ -259,6 +259,7 @@ func readBucketsType6(uids []int64, metric string, aTypes []int64, start_ts int6
 	min_buckets := bucketsForMins(min.Unix(), hour.Unix()-1)
 	hour_buckets := bucketsForHours(hour.Unix(), day.Unix()-1)
 	day_buckets := bucketsForDays(day.Unix(), month.Unix()-1)
+
 	month_buckets := bucketsForMonths(month.Unix(), byear.Unix()-1)
 
 	addSumNormalBuckets(sec_buckets, uids, metric, aTypes, &qr)
@@ -357,9 +358,10 @@ func bucketsForMonths(start_ts, end_ts int64) []string {
 		results = append(results, bucket)
 
 		curMonth := from.Month()
+		curYear := from.Year()
 
 		for {
-			if from.Month() > curMonth {
+			if from.Month() > curMonth || from.Year() > curYear {
 				break
 			}
 			from = from.Add(time.Hour * 24)
