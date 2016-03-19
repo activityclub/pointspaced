@@ -15,7 +15,7 @@ type SimpleSum struct {
 type RedisSimple struct {
 }
 
-func before_times(ts int64) (min, hour, day time.Time) {
+func before_times(ts int64) (min, hour, day, month, year time.Time) {
 	from := time.Unix(ts, 0)
 	min = from
 	if from.Second() > 0 {
@@ -35,6 +35,14 @@ func before_times(ts int64) (min, hour, day time.Time) {
 		from = from.Add(time.Hour * hours_til_day)
 		day = from
 	}
+	month = from
+	fmt.Println(from.Month())
+	if from.Month() > 1 {
+		from = from.Add(time.Hour * 24)
+		month = from
+	}
+
+	year = from
 
 	return
 }
@@ -70,59 +78,34 @@ func addSumNormalBuckets(buckets []string, uids []int64, metric string, aTypes [
 	}
 }
 
-func determineRange(start_ts, end_ts int64) []string {
+func determineRangeType(start_ts, end_ts int64) int {
 	delta := end_ts - start_ts
-	list := make([]string, 0)
-
-	list = append(list, "sec")
-	if delta/60 > 0 {
-		list = append(list, "min")
-	}
-	if delta/3600 > 0 {
-		list = append(list, "hour")
-	}
-	if delta/86400 > 0 {
-		list = append(list, "day")
+	if delta/31536000 > 0 {
+		return 6 // year
 	}
 	if delta/2592000 > 0 {
-		list = append(list, "month")
+		return 5 // month
 	}
-	if delta/31536000 > 0 {
-		list = append(list, "year")
+	if delta/86400 > 0 {
+		return 4 // day
 	}
-
-	if len(list) == 1 {
-		list = append(list, "sec")
-		return list
+	if delta/3600 > 0 {
+		return 3 // hour
 	}
-
-	i := len(list) - 1
-	for {
-		i -= 1
-		list = append(list, list[i])
-		if i == 0 {
-			break
-		}
-
+	if delta/60 > 0 {
+		return 2
 	}
 
-	return list
+	return 1
 }
 
-func (self RedisSimple) ReadBuckets(uids []int64, metric string, aTypes []int64, start_ts int64, end_ts int64, debug string) QueryResponse {
+func readBucketsType4(uids []int64, metric string, aTypes []int64, start_ts int64, end_ts int64) QueryResponse {
 	qr := QueryResponse{}
 	qr.UserToSum = make(map[string]int64)
 
-	timeRanges := determineRange(start_ts, end_ts)
-	//fmt.Println(timeRanges)
-
-	if len(timeRanges) == 2 {
-		sec_buckets := bucketsForSecs(start_ts, end_ts)
-		addSumNormalBuckets(sec_buckets, uids, metric, aTypes, &qr)
-		return qr
-	}
-
-	min, hour, bday := before_times(start_ts)
+	min, hour, bday, month, year := before_times(start_ts)
+	fmt.Println(month)
+	fmt.Println(year)
 
 	sec_buckets := bucketsForSecs(start_ts, min.Unix()-1)
 	min_buckets := bucketsForMins(min.Unix(), hour.Unix()-1)
@@ -162,6 +145,37 @@ func (self RedisSimple) ReadBuckets(uids []int64, metric string, aTypes []int64,
 	//fmt.Println(min)
 
 	return qr
+}
+
+func (self RedisSimple) ReadBuckets(uids []int64, metric string, aTypes []int64, start_ts int64, end_ts int64, debug string) QueryResponse {
+
+	timeRangeType := determineRangeType(start_ts, end_ts)
+	fmt.Println("type ", timeRangeType)
+
+	if timeRangeType == 1 {
+		qr := QueryResponse{}
+		qr.UserToSum = make(map[string]int64)
+		sec_buckets := bucketsForSecs(start_ts, end_ts)
+		addSumNormalBuckets(sec_buckets, uids, metric, aTypes, &qr)
+		return qr
+	}
+	if timeRangeType == 2 {
+		return readBucketsType4(uids, metric, aTypes, start_ts, end_ts)
+	}
+	if timeRangeType == 3 {
+		return readBucketsType4(uids, metric, aTypes, start_ts, end_ts)
+	}
+	if timeRangeType == 4 {
+		return readBucketsType4(uids, metric, aTypes, start_ts, end_ts)
+	}
+	if timeRangeType == 5 {
+		return readBucketsType4(uids, metric, aTypes, start_ts, end_ts)
+	}
+	if timeRangeType == 6 {
+		return readBucketsType4(uids, metric, aTypes, start_ts, end_ts)
+	}
+
+	return QueryResponse{}
 }
 
 func bucketsForDays(start_ts, end_ts int64) []string {
