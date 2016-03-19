@@ -120,6 +120,26 @@ func determineRangeType(start_ts, end_ts int64) int {
 	return 1
 }
 
+func readBucketsType2(uids []int64, metric string, aTypes []int64, start_ts int64, end_ts int64) QueryResponse {
+	qr := QueryResponse{}
+	qr.UserToSum = make(map[string]int64)
+
+	min, bhour, _, _, _ := before_times(start_ts)
+
+	sec_buckets := bucketsForSecs(start_ts, min.Unix()-1)
+	min_buckets := bucketsForMins(min.Unix(), bhour.Unix()-1)
+
+	addSumNormalBuckets(sec_buckets, uids, metric, aTypes, &qr)
+	addSumNormalBuckets(min_buckets, uids, metric, aTypes, &qr)
+
+	min, _, _, _, _ = after_times(end_ts)
+
+	sec_buckets = bucketsForSecs(min.Unix(), end_ts)
+
+	addSumNormalBuckets(sec_buckets, uids, metric, aTypes, &qr)
+
+	return qr
+}
 func readBucketsType4(uids []int64, metric string, aTypes []int64, start_ts int64, end_ts int64) QueryResponse {
 	qr := QueryResponse{}
 	qr.UserToSum = make(map[string]int64)
@@ -179,7 +199,7 @@ func (self RedisSimple) ReadBuckets(uids []int64, metric string, aTypes []int64,
 		return qr
 	}
 	if timeRangeType == 2 {
-		return readBucketsType4(uids, metric, aTypes, start_ts, end_ts)
+		return readBucketsType2(uids, metric, aTypes, start_ts, end_ts)
 	}
 	if timeRangeType == 3 {
 		return readBucketsType4(uids, metric, aTypes, start_ts, end_ts)
