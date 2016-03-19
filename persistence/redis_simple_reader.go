@@ -72,10 +72,10 @@ func after_times(ts int64) (min, hour, day, month, year time.Time) {
 		day = to
 	}
 	for {
-		if to.Day() == 1 {
+		if to.Day() == 1 && to.Hour() == 0 {
 			break
 		}
-		to = to.Add(time.Hour * -24)
+		to = to.Add(time.Hour * -1)
 	}
 	month = to
 	for {
