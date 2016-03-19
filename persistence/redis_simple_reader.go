@@ -140,6 +140,35 @@ func readBucketsType2(uids []int64, metric string, aTypes []int64, start_ts int6
 
 	return qr
 }
+
+func readBucketsType3(uids []int64, metric string, aTypes []int64, start_ts int64, end_ts int64) QueryResponse {
+	qr := QueryResponse{}
+	qr.UserToSum = make(map[string]int64)
+
+	min, hour, bday, _, _ := before_times(start_ts)
+
+	sec_buckets := bucketsForSecs(start_ts, min.Unix()-1)
+	min_buckets := bucketsForMins(min.Unix(), hour.Unix()-1)
+	hour_buckets := bucketsForHours(hour.Unix(), bday.Unix()-1)
+
+	addSumNormalBuckets(sec_buckets, uids, metric, aTypes, &qr)
+	addSumNormalBuckets(min_buckets, uids, metric, aTypes, &qr)
+	addSumNormalBuckets(hour_buckets, uids, metric, aTypes, &qr)
+
+	var aday time.Time
+	min, hour, aday, _, _ = after_times(end_ts)
+
+	sec_buckets = bucketsForSecs(min.Unix(), end_ts)
+	min_buckets = bucketsForMins(hour.Unix(), min.Unix()-1)
+	hour_buckets = bucketsForHours(aday.Unix(), hour.Unix()-1)
+
+	addSumNormalBuckets(sec_buckets, uids, metric, aTypes, &qr)
+	addSumNormalBuckets(min_buckets, uids, metric, aTypes, &qr)
+	addSumNormalBuckets(hour_buckets, uids, metric, aTypes, &qr)
+
+	return qr
+}
+
 func readBucketsType4(uids []int64, metric string, aTypes []int64, start_ts int64, end_ts int64) QueryResponse {
 	qr := QueryResponse{}
 	qr.UserToSum = make(map[string]int64)
@@ -186,6 +215,40 @@ func readBucketsType4(uids []int64, metric string, aTypes []int64, start_ts int6
 	return qr
 }
 
+func readBucketsType5(uids []int64, metric string, aTypes []int64, start_ts int64, end_ts int64) QueryResponse {
+	qr := QueryResponse{}
+	qr.UserToSum = make(map[string]int64)
+
+	min, hour, day, bmonth, _ := before_times(start_ts)
+
+	sec_buckets := bucketsForSecs(start_ts, min.Unix()-1)
+	min_buckets := bucketsForMins(min.Unix(), hour.Unix()-1)
+	hour_buckets := bucketsForHours(hour.Unix(), day.Unix()-1)
+	day_buckets := bucketsForDays(day.Unix(), bmonth.Unix()-1)
+
+	addSumNormalBuckets(sec_buckets, uids, metric, aTypes, &qr)
+	addSumNormalBuckets(min_buckets, uids, metric, aTypes, &qr)
+	addSumNormalBuckets(hour_buckets, uids, metric, aTypes, &qr)
+	addSumNormalBuckets(day_buckets, uids, metric, aTypes, &qr)
+
+	var amonth time.Time
+	min, hour, day, amonth, _ = after_times(end_ts)
+
+	sec_buckets = bucketsForSecs(min.Unix(), end_ts)
+	min_buckets = bucketsForMins(hour.Unix(), min.Unix()-1)
+	hour_buckets = bucketsForHours(day.Unix(), hour.Unix()-1)
+	day_buckets = bucketsForDays(amonth.Unix(), day.Unix()-1)
+	month_buckets := bucketsForMonths(bmonth.Unix(), amonth.Unix()-1)
+
+	addSumNormalBuckets(sec_buckets, uids, metric, aTypes, &qr)
+	addSumNormalBuckets(min_buckets, uids, metric, aTypes, &qr)
+	addSumNormalBuckets(day_buckets, uids, metric, aTypes, &qr)
+	addSumNormalBuckets(hour_buckets, uids, metric, aTypes, &qr)
+	addSumNormalBuckets(month_buckets, uids, metric, aTypes, &qr)
+
+	return qr
+}
+
 func (self RedisSimple) ReadBuckets(uids []int64, metric string, aTypes []int64, start_ts int64, end_ts int64, debug string) QueryResponse {
 
 	timeRangeType := determineRangeType(start_ts, end_ts)
@@ -202,19 +265,45 @@ func (self RedisSimple) ReadBuckets(uids []int64, metric string, aTypes []int64,
 		return readBucketsType2(uids, metric, aTypes, start_ts, end_ts)
 	}
 	if timeRangeType == 3 {
-		return readBucketsType4(uids, metric, aTypes, start_ts, end_ts)
+		return readBucketsType3(uids, metric, aTypes, start_ts, end_ts)
 	}
 	if timeRangeType == 4 {
 		return readBucketsType4(uids, metric, aTypes, start_ts, end_ts)
 	}
 	if timeRangeType == 5 {
-		return readBucketsType4(uids, metric, aTypes, start_ts, end_ts)
+		return readBucketsType5(uids, metric, aTypes, start_ts, end_ts)
 	}
 	if timeRangeType == 6 {
 		return readBucketsType4(uids, metric, aTypes, start_ts, end_ts)
 	}
 
 	return QueryResponse{}
+}
+
+func bucketsForMonths(start_ts, end_ts int64) []string {
+	results := make([]string, 0)
+
+	from := time.Unix(start_ts, 0)
+	to := time.Unix(end_ts, 0)
+
+	for {
+		if from.Unix() > to.Unix() {
+			break
+		}
+		bucket := bucket_for_month(from)
+		results = append(results, bucket)
+
+		curMonth := from.Month()
+
+		for {
+			if from.Month() > curMonth {
+				break
+			}
+			from = from.Add(time.Hour * 24)
+		}
+	}
+
+	return results
 }
 
 func bucketsForDays(start_ts, end_ts int64) []string {
