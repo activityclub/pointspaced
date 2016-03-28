@@ -5,6 +5,7 @@ import "strconv"
 import "errors"
 import "pointspaced/psdcontext"
 import "github.com/garyburd/redigo/redis"
+import "github.com/ugorji/go/codec"
 
 type RedisHZ struct {
 }
@@ -53,22 +54,52 @@ func (self RedisHZ) ReadBuckets(uids []int64, metric string, aTypes []int64, sta
 	r := psdcontext.Ctx.RedisPool.Get()
 	defer r.Close()
 
-	rlen := len(requests)
-	cmd := make([]interface{}, (rlen*3)+1)
-	cmd[0] = rlen
-	aidx := rlen + 1
-	idx := 1
+	/*
+		rlen := len(requests)
+		cmd := make([]interface{}, (rlen*3)+1)
+		cmd[0] = rlen
+		aidx := rlen + 1
+		idx := 1
+
+		for _, request := range requests {
+			key := "hz:1:0:" + metric + ":" + request.TimeBucket
+
+			cmd[idx] = key
+			idx += 1
+
+			cmd[aidx] = request.QueryMin()
+			aidx += 1
+			cmd[aidx] = request.QueryMax()
+			aidx += 1
+		}
+
+		response, err := redis.Int64(psdcontext.Ctx.AgScript.Do(r, cmd...))
+		if err != nil {
+			panic(err)
+		}
+	*/
+
+	cmd := []interface{}{}
+
+	cmd = append(cmd, 0)
 
 	for _, request := range requests {
 		key := "hz:1:0:" + metric + ":" + request.TimeBucket
+		item := []interface{}{}
 
-		cmd[idx] = key
-		idx += 1
+		qmin, _ := strconv.Atoi(request.QueryMin())
+		qmax, _ := strconv.Atoi(request.QueryMax())
+		//item = append(item, key, request.QueryMin(), request.QueryMax())
+		item = append(item, key, qmin, qmax)
+		var b []byte = make([]byte, 0, 64)
+		var h codec.Handle = new(codec.MsgpackHandle)
+		var enc *codec.Encoder = codec.NewEncoderBytes(&b, h)
+		var err error = enc.Encode(item)
+		if err != nil {
+			panic(err)
+		}
+		cmd = append(cmd, b)
 
-		cmd[aidx] = request.QueryMin()
-		aidx += 1
-		cmd[aidx] = request.QueryMax()
-		aidx += 1
 	}
 
 	response, err := redis.Int64(psdcontext.Ctx.AgScript.Do(r, cmd...))

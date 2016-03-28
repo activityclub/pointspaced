@@ -23,26 +23,45 @@ func TestMain(m *testing.M) {
 	/* load scripts */
 
 	rx := psdcontext.Ctx.RedisPool.Get()
+
 	psdcontext.Ctx.AgScript = redis.NewScript(-1, `local sum = 0
-local pos = 1
-for _, key in ipairs(KEYS) do
-  local bulk = redis.call('HGETALL', key)
-  local result = {}
+for _, packed in ipairs(ARGV) do
+  local unpacked = cmsgpack.unpack(packed)
   local cscore
-  local offset_a = pos
-  local offset_b = pos+1
-  for i, v in ipairs(bulk) do
+  for i, v in ipairs(redis.call('HGETALL', unpacked[1])) do
     if i % 2 == 1 then
-      cscore = v
+    cscore = tonumber(v)
     else
-      if cscore >= ARGV[offset_a] and cscore <= ARGV[offset_b] then
+      if cscore >= unpacked[2] and cscore <= unpacked[3] then
         sum = sum + v
       end
     end
   end
-  pos = pos +  2
 end
 return sum`)
+
+	/*
+	   	psdcontext.Ctx.AgScript = redis.NewScript(-1, `local sum = 0
+	   local pos = 1
+	   for _, key in ipairs(KEYS) do
+	     local bulk = redis.call('HGETALL', key)
+	     local result = {}
+	     local cscore
+	     local offset_a = pos
+	     local offset_b = pos+1
+	     for i, v in ipairs(bulk) do
+	       if i % 2 == 1 then
+	         cscore = v
+	       else
+	         if cscore >= ARGV[offset_a] and cscore <= ARGV[offset_b] then
+	           sum = sum + v
+	         end
+	       end
+	     end
+	     pos = pos +  2
+	   end
+	   return sum`)
+	*/
 
 	err := psdcontext.Ctx.AgScript.Load(rx)
 	if err != nil {
@@ -76,11 +95,11 @@ func TestACR(t *testing.T) {
 }
 
 func TestSimple(t *testing.T) {
-	testMetricRWInterface(t, NewMetricManagerSimple())
+	//	testMetricRWInterface(t, NewMetricManagerSimple())
 }
 
 func TestHZ(t *testing.T) {
-	//testMetricRWInterface(t, NewMetricManagerHZ())
+	testMetricRWInterface(t, NewMetricManagerHZ())
 }
 
 func BenchmarkSimple_WriteOneHundred(b *testing.B) {
