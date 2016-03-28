@@ -210,9 +210,9 @@ func testMetricRWInterface(t *testing.T, mm MetricRW) {
 }
 
 func clearRedisCompletely() {
-	//	r := psdcontext.Ctx.RedisPool.Get()
-	//	r.Do("flushall")
-	//	r.Close()
+	r := psdcontext.Ctx.RedisPool.Get()
+	r.Do("flushall")
+	r.Close()
 }
 
 func testValidRead(t *testing.T, mm MetricRW) {
