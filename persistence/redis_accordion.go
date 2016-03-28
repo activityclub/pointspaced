@@ -1,8 +1,7 @@
 package persistence
 
 import "time"
-
-//import "fmt"
+import "sync"
 import "strconv"
 import "errors"
 import "pointspaced/psdcontext"
@@ -61,48 +60,78 @@ func (self RedisACR) ReadBuckets(uids []int64, metric string, aTypes []int64, st
 	requests := self.requestsForRange(start_ts, end_ts)
 	//fmt.Println("[Accordion] Requests:", requests)
 
-	r := psdcontext.Ctx.RedisPool.Get()
+	qr := QueryResponse{}
+	qr.UserToSum = make(map[int64]int64, len(uids))
 
-	sum := int64(0)
-	keys := make([]string, len(requests))
-	idx := 0
-	for k, request := range requests {
-		keys[idx] = k
-		key := "acr:1:0:" + metric + ":" + request.TimeBucket
-		r.Send("ZRANGE", key, 0, -1, "WITHSCORES")
-		idx += 1
-	}
-	r.Flush()
+	var wg sync.WaitGroup
+	wg.Add(len(uids))
 
-	for _, k := range keys {
-		request := requests[k]
-		response, err := redis.Values(r.Receive())
-		if err != nil {
-			panic(err) // TODO
-		}
+	results := make(chan map[int64]int64)
 
-		for idx, vx := range response {
-			if idx%2 == 1 {
-				myts, err := strconv.Atoi(string(response[idx-1].([]uint8)))
-				//myts, err := strconv.ParseInt(string(response[idx-1].([]uint8)), 10, 64)
+	for _, uid := range uids {
+
+		go func(uid int64) {
+
+			struid := strconv.FormatInt(uid, 10)
+
+			r := psdcontext.Ctx.RedisPool.Get()
+			sum := int64(0)
+			keys := make([]string, len(requests))
+			idx := 0
+			for k, request := range requests {
+				keys[idx] = k
+				key := "acr:" + struid + ":0:" + metric + ":" + request.TimeBucket
+				r.Send("ZRANGE", key, 0, -1, "WITHSCORES")
+				idx += 1
+			}
+			r.Flush()
+
+			for _, k := range keys {
+				request := requests[k]
+				response, err := redis.Values(r.Receive())
 				if err != nil {
-					panic(err)
+					panic(err) // TODO
 				}
-				if myts >= request.QueryMin() && myts <= request.QueryMax() {
-					intval, err := strconv.ParseInt(string(vx.([]uint8)), 10, 64)
-					if err != nil {
-						panic(err)
+
+				for idx, vx := range response {
+					if idx%2 == 1 {
+						myts, err := strconv.Atoi(string(response[idx-1].([]uint8)))
+						//myts, err := strconv.ParseInt(string(response[idx-1].([]uint8)), 10, 64)
+						if err != nil {
+							panic(err)
+						}
+						if myts >= request.QueryMin() && myts <= request.QueryMax() {
+							intval, err := strconv.ParseInt(string(vx.([]uint8)), 10, 64)
+							if err != nil {
+								panic(err)
+							}
+							sum += intval
+						}
 					}
-					sum += intval
 				}
 			}
-		}
+
+			entry := map[int64]int64{}
+			entry[uid] = sum
+
+			r.Close()
+
+			results <- entry
+
+		}(uid)
+
 	}
 
-	qr := QueryResponse{}
-	qr.UserToSum = map[string]int64{}
-	qr.UserToSum["1"] = sum
-	r.Close()
+	go func() {
+		for entry := range results {
+			for k, v := range entry {
+				qr.UserToSum[k] = v
+			}
+			wg.Done()
+		}
+	}()
+
+	wg.Wait()
 
 	return qr
 }

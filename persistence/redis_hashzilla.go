@@ -3,6 +3,7 @@ package persistence
 import "time"
 import "strconv"
 import "errors"
+import "sync"
 import "pointspaced/psdcontext"
 import "github.com/garyburd/redigo/redis"
 import "github.com/ugorji/go/codec"
@@ -51,64 +52,91 @@ func (self RedisHZ) ReadBuckets(uids []int64, metric string, aTypes []int64, sta
 	requests := self.requestsForRange(start_ts, end_ts)
 	//fmt.Println("[Hashzilla] Requests:", requests)
 
-	r := psdcontext.Ctx.RedisPool.Get()
-	defer r.Close()
-
-	/*
-		rlen := len(requests)
-		cmd := make([]interface{}, (rlen*3)+1)
-		cmd[0] = rlen
-		aidx := rlen + 1
-		idx := 1
-
-		for _, request := range requests {
-			key := "hz:1:0:" + metric + ":" + request.TimeBucket
-
-			cmd[idx] = key
-			idx += 1
-
-			cmd[aidx] = request.QueryMin()
-			aidx += 1
-			cmd[aidx] = request.QueryMax()
-			aidx += 1
-		}
-
-		response, err := redis.Int64(psdcontext.Ctx.AgScript.Do(r, cmd...))
-		if err != nil {
-			panic(err)
-		}
-	*/
-
-	cmd := []interface{}{}
-
-	cmd = append(cmd, 0)
-
-	for _, request := range requests {
-		key := "hz:1:0:" + metric + ":" + request.TimeBucket
-		item := []interface{}{}
-
-		qmin, _ := strconv.Atoi(request.QueryMin())
-		qmax, _ := strconv.Atoi(request.QueryMax())
-		//item = append(item, key, request.QueryMin(), request.QueryMax())
-		item = append(item, key, qmin, qmax)
-		var b []byte = make([]byte, 0, 64)
-		var h codec.Handle = new(codec.MsgpackHandle)
-		var enc *codec.Encoder = codec.NewEncoderBytes(&b, h)
-		var err error = enc.Encode(item)
-		if err != nil {
-			panic(err)
-		}
-		cmd = append(cmd, b)
-
-	}
-
-	response, err := redis.Int64(psdcontext.Ctx.AgScript.Do(r, cmd...))
-	if err != nil {
-		panic(err)
-	}
-
 	qr := QueryResponse{}
-	qr.UserToSum = map[string]int64{"1": response}
+	qr.UserToSum = make(map[int64]int64, len(uids))
+
+	var wg sync.WaitGroup
+	wg.Add(len(uids))
+
+	results := make(chan map[int64]int64)
+
+	for _, uid := range uids {
+
+		go func(uid int64) {
+			r := psdcontext.Ctx.RedisPool.Get()
+			defer r.Close()
+
+			/*
+				rlen := len(requests)
+				cmd := make([]interface{}, (rlen*3)+1)
+				cmd[0] = rlen
+				aidx := rlen + 1
+				idx := 1
+
+				for _, request := range requests {
+					key := "hz:1:0:" + metric + ":" + request.TimeBucket
+
+					cmd[idx] = key
+					idx += 1
+
+					cmd[aidx] = request.QueryMin()
+					aidx += 1
+					cmd[aidx] = request.QueryMax()
+					aidx += 1
+				}
+
+				response, err := redis.Int64(psdcontext.Ctx.AgScript.Do(r, cmd...))
+				if err != nil {
+					panic(err)
+				}
+			*/
+
+			cmd := []interface{}{}
+
+			cmd = append(cmd, 0)
+
+			struid := strconv.FormatInt(uid, 10)
+
+			for _, request := range requests {
+				key := "hz:" + struid + ":0:" + metric + ":" + request.TimeBucket
+				item := []interface{}{}
+
+				qmin, _ := strconv.Atoi(request.QueryMin())
+				qmax, _ := strconv.Atoi(request.QueryMax())
+				item = append(item, key, qmin, qmax)
+				var b []byte = make([]byte, 0, 64)
+				var h codec.Handle = new(codec.MsgpackHandle)
+				var enc *codec.Encoder = codec.NewEncoderBytes(&b, h)
+				var err error = enc.Encode(item)
+				if err != nil {
+					panic(err)
+				}
+				cmd = append(cmd, b)
+			}
+
+			response, err := redis.Int64(psdcontext.Ctx.AgScript.Do(r, cmd...))
+			if err != nil {
+				panic(err)
+			}
+
+			entry := map[int64]int64{}
+			entry[uid] = response
+			results <- entry
+
+		}(uid)
+
+	}
+
+	go func() {
+		for entry := range results {
+			for k, v := range entry {
+				qr.UserToSum[k] = v
+			}
+			wg.Done()
+		}
+	}()
+
+	wg.Wait()
 
 	return qr
 }

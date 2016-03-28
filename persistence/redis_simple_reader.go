@@ -66,13 +66,13 @@ func addSumNormalBuckets(buckets []string, uids []int64, metric string, aTypes [
 			sum += sumFromRedis(buckets, uid, atype, metric)
 		}
 
-		qr.UserToSum[strconv.FormatInt(uid, 10)] += sum
+		qr.UserToSum[uid] += sum
 	}
 }
 
 func (self RedisSimple) ReadBuckets(uids []int64, metric string, aTypes []int64, start_ts int64, end_ts int64, debug string) QueryResponse {
 	qr := QueryResponse{}
-	qr.UserToSum = make(map[string]int64)
+	qr.UserToSum = make(map[int64]int64)
 
 	if end_ts-start_ts < 3600 {
 		sec_buckets := bucketsForSecs(start_ts, end_ts)
