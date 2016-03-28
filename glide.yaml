@@ -18,3 +18,6 @@ import:
 - package: github.com/mreiferson/go-snappystream
   version: 028eae7ab5c4c9e2d1cb4c4ca1e53259bbe7e504
   vcs: git
+- package: github.com/ugorji/go/codec
+  version: a396ed22fc049df733440d90efe17475e3929ccb
+  vcs: git

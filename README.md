@@ -18,3 +18,11 @@ then you should be able to do ruby scripts/enqueue.rb
     * people use fitbit vs people that use healthkit
     * results for my list of followers
     * etc etc
+
+
+* hashzilla
+  * concurrency benchmarks / test parallel
+  * test with random read keys
+  * test insert not linear
+  * lua experiment
+
