@@ -26,12 +26,14 @@ then you should be able to do ruby scripts/enqueue.rb
   * test insert not linear
   * lua experiment
 
+```
 	// we will write 10, 11, 1 point
 	WritePoint("points", 1, 10, 3, 1458061005) // 2016-03-15 16:56:45
 	WritePoint("points", 1, 11, 3, 1458061008) // 2016-03-15 16:56:48
 	WritePoint("points", 1, 1, 3, 1458061011)  // 2016-03-15 16:56:51
 	// lets try to read all but the last 16:56:45 to 16:56:50
 	ReadBuckets([]int64{1}, "points", []int64{3}, 1458061005, 1458061010, "0")
+```
 ```
 1460078760.683793 [0 127.0.0.1:49279] "SCRIPT" "LOAD" "local sum = 0\nfor _, packed in ipairs(ARGV) do\n  local unpacked = cmsgpack.unpack(packed)\n  local cscore\n  for i, v in ipairs(redis.call('HGETALL', unpacked[1])) do\n    if i % 2 == 1 then\n    cscore = tonumber(v)\n    else\n      if cscore >= unpacked[2] and cscore <= unpacked[3] then\n        sum = sum + v\n      end\n    end\n  end\nend\nreturn sum"
 1460078760.693822 [0 127.0.0.1:49279] "flushall"
