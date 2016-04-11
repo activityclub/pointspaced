@@ -208,12 +208,36 @@ func testMetricRWInterface(t *testing.T, mm MetricRW) {
 	testEvenLongerMultiDayValidRead(t, mm)
 	testReallyLongValidRead(t, mm)
 	testMultiUserLongRead(t, mm)
+	testAPS(t, mm)
 }
 
 func clearRedisCompletely() {
 	r := psdcontext.Ctx.RedisPool.Get()
 	r.Do("flushall")
 	r.Close()
+}
+
+func testAPS(t *testing.T, mm MetricRW) {
+	clearRedisCompletely()
+
+	mm.WritePoint("points", 1, 10, 3, 1458061005) // 2016-03-15 16:56:45
+	mm.WritePoint("points", 2, 10, 3, 1458061005)
+	mm.WritePoint("points", 327, 11, 3, 1458061005)
+
+	mm.WritePoint("points", 1, 10, 3, 1458061006)
+	mm.WritePoint("points", 2, 10, 3, 1458061006)
+	mm.WritePoint("points", 327, 11, 3, 1458061007)
+
+	mm.WritePoint("points", 1, 10, 3, 1458061009)
+	mm.WritePoint("points", 2, 10, 3, 1458061009)
+	mm.WritePoint("points", 327, 11, 3, 1458061009)
+
+	mm.WritePoint("distance", 11, 10, 5, 1458061010) // no steps involved, user 11 also no weight
+	mm.WritePoint("calories", 11, 10, 5, 1458061010) // no steps involved, user 11 also no weight
+	mm.WritePoint("steps", 12, 10, 3, 1458061010)    // user 12 has no weight, can't get points
+	mm.WritePoint("points", 1327, 11, 1, 1458061010) // activity_type 1 should still be included
+
+	//res := mm.ComputeAPS(1458061005, 1458061010) // 12
 }
 
 func testValidRead(t *testing.T, mm MetricRW) {
