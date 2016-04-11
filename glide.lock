@@ -1,5 +1,5 @@
-hash: 2633d422b0fbbb5dd714bf13130f522de970ded2d4b9b716c7c919d13159947e
-updated: 2016-03-15T23:07:22.476860906-07:00
+hash: 7a446b21c22b1cab88880eff5882919f91f776b685b893466b1552233c3aaf77
+updated: 2016-04-07T18:16:00.15178444-07:00
 imports:
 - name: github.com/bitly/go-nsq
   version: 0b80d6f05e15ca1930e0c5e1d540ed627e299980
@@ -41,6 +41,11 @@ imports:
   version: f390dcf405f7b83c997eac1b06768bb9f44dec18
   subpackages:
   - assert
+- name: github.com/ugorji/go
+  version: a396ed22fc049df733440d90efe17475e3929ccb
+  vcs: git
+  subpackages:
+  - codec
 - name: golang.org/x/crypto
   version: 1f22c0103821b9390939b6776727195525381532
 - name: golang.org/x/net

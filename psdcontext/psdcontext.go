@@ -13,9 +13,14 @@ type NSQConfig struct {
 	NSQLookupds []string
 }
 
+type RedisConfig struct {
+	Expire int64
+}
+
 type Config struct {
 	NSQConfig  NSQConfig
 	HttpConfig HttpConfig
+	Redis      RedisConfig
 }
 
 type Context struct {

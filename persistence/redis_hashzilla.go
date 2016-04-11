@@ -341,7 +341,11 @@ func (self RedisHZ) WritePoint(flavor string, userId int64, value int64, activit
 				key := "hz:" + strUserId + ":" + strAType + ":" + flavor + ":" + bucket
 
 				// TODO LOCKING
-				r.Do("HINCRBY", key, set_timestamp, value)
+				r.Send("HINCRBY", key, set_timestamp, value)
+				r.Send("EXPIRE", key, psdcontext.Ctx.Config.Redis.Expire)
+				r.Flush()
+				r.Receive()
+				r.Receive()
 			}
 		}
 	}
