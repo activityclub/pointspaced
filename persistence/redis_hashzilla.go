@@ -308,7 +308,19 @@ func (self RedisHZ) requestsForRange(start_ts int64, end_ts int64) map[string]Re
 }
 
 func (self RedisHZ) OldWritePoint(thing string, userId, value, activityId, ts int64) error {
-	return nil
+	sopts := make(map[string]string)
+	sopts["device"] = "ios"
+	sopts["tz"] = "America/New_York"
+	sopts["gender"] = "m"
+	sopts["service"] = "fitbit"
+	sopts["thing"] = thing
+
+	iopts := make(map[string]int64)
+	iopts["userId"] = userId
+	iopts["activityId"] = activityId
+	iopts["value"] = value
+	iopts["ts"] = ts
+	return self.WritePoint(sopts, iopts)
 }
 
 func (self RedisHZ) WritePoint(sopts map[string]string, iopts map[string]int64) error {

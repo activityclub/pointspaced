@@ -220,22 +220,22 @@ func clearRedisCompletely() {
 func testAPS(t *testing.T, mm MetricRW) {
 	clearRedisCompletely()
 
-	mm.WritePoint("points", 1, 10, 3, 1458061005) // 2016-03-15 16:56:45
-	mm.WritePoint("points", 2, 10, 3, 1458061005)
-	mm.WritePoint("points", 327, 11, 3, 1458061005)
+	mm.OldWritePoint("points", 1, 10, 3, 1458061005) // 2016-03-15 16:56:45
+	mm.OldWritePoint("points", 2, 10, 3, 1458061005)
+	mm.OldWritePoint("points", 327, 11, 3, 1458061005)
 
-	mm.WritePoint("points", 1, 10, 3, 1458061006)
-	mm.WritePoint("points", 2, 10, 3, 1458061006)
-	mm.WritePoint("points", 327, 11, 3, 1458061007)
+	mm.OldWritePoint("points", 1, 10, 3, 1458061006)
+	mm.OldWritePoint("points", 2, 10, 3, 1458061006)
+	mm.OldWritePoint("points", 327, 11, 3, 1458061007)
 
-	mm.WritePoint("points", 1, 10, 3, 1458061009)
-	mm.WritePoint("points", 2, 10, 3, 1458061009)
-	mm.WritePoint("points", 327, 11, 3, 1458061009)
+	mm.OldWritePoint("points", 1, 10, 3, 1458061009)
+	mm.OldWritePoint("points", 2, 10, 3, 1458061009)
+	mm.OldWritePoint("points", 327, 11, 3, 1458061009)
 
-	mm.WritePoint("distance", 11, 10, 5, 1458061010) // no steps involved, user 11 also no weight
-	mm.WritePoint("calories", 11, 10, 5, 1458061010) // no steps involved, user 11 also no weight
-	mm.WritePoint("steps", 12, 10, 3, 1458061010)    // user 12 has no weight, can't get points
-	mm.WritePoint("points", 1327, 11, 1, 1458061010) // activity_type 1 should still be included
+	mm.OldWritePoint("distance", 11, 10, 5, 1458061010) // no steps involved, user 11 also no weight
+	mm.OldWritePoint("calories", 11, 10, 5, 1458061010) // no steps involved, user 11 also no weight
+	mm.OldWritePoint("steps", 12, 10, 3, 1458061010)    // user 12 has no weight, can't get points
+	mm.OldWritePoint("points", 1327, 11, 1, 1458061010) // activity_type 1 should still be included
 
 	//res := mm.ComputeAPS(1458061005, 1458061010) // 12
 }
@@ -244,19 +244,19 @@ func testValidRead(t *testing.T, mm MetricRW) {
 	clearRedisCompletely()
 
 	// we will write 10 points
-	err := mm.WritePoint("points", 1, 10, 3, 1458061005)
+	err := mm.OldWritePoint("points", 1, 10, 3, 1458061005)
 	if err != nil {
 		t.Fail()
 	}
 
 	// add 11 points
-	err = mm.WritePoint("points", 1, 11, 3, 1458061008)
+	err = mm.OldWritePoint("points", 1, 11, 3, 1458061008)
 	if err != nil {
 		t.Fail()
 	}
 
 	// add 1 point
-	err = mm.WritePoint("points", 1, 1, 3, 1458061011)
+	err = mm.OldWritePoint("points", 1, 1, 3, 1458061011)
 	if err != nil {
 		t.Fail()
 	}
@@ -283,19 +283,19 @@ func testMultiDayValidRead(t *testing.T, mm MetricRW) {
 	clearRedisCompletely()
 	// we will write 10 points
 
-	err := mm.WritePoint("points", 1, 10, 3, 1458061005)
+	err := mm.OldWritePoint("points", 1, 10, 3, 1458061005)
 	if err != nil {
 		t.Fail()
 	}
 
 	// add 11 points
-	err = mm.WritePoint("points", 1, 11, 3, 1458061008)
+	err = mm.OldWritePoint("points", 1, 11, 3, 1458061008)
 	if err != nil {
 		t.Fail()
 	}
 
 	// add 1 point
-	err = mm.WritePoint("points", 1, 1, 3, 1458061011)
+	err = mm.OldWritePoint("points", 1, 1, 3, 1458061011)
 	if err != nil {
 		t.Fail()
 	}
@@ -309,29 +309,29 @@ func testEvenLongerMultiDayValidRead(t *testing.T, mm MetricRW) {
 	clearRedisCompletely()
 
 	// we will write 10 points
-	err := mm.WritePoint("points", 1, 100, 3, 1451635204)
+	err := mm.OldWritePoint("points", 1, 100, 3, 1451635204)
 	if err != nil {
 		t.Fail()
 	}
 
-	err = mm.WritePoint("points", 1, 200, 3, 1454313600)
+	err = mm.OldWritePoint("points", 1, 200, 3, 1454313600)
 	if err != nil {
 		t.Fail()
 	}
 
-	err = mm.WritePoint("points", 1, 10, 3, 1458061005)
+	err = mm.OldWritePoint("points", 1, 10, 3, 1458061005)
 	if err != nil {
 		t.Fail()
 	}
 
 	// add 11 points
-	err = mm.WritePoint("points", 1, 11, 3, 1458061008)
+	err = mm.OldWritePoint("points", 1, 11, 3, 1458061008)
 	if err != nil {
 		t.Fail()
 	}
 
 	// add 1 point
-	err = mm.WritePoint("points", 1, 1, 3, 1458061011)
+	err = mm.OldWritePoint("points", 1, 1, 3, 1458061011)
 	if err != nil {
 		t.Fail()
 	}
@@ -352,27 +352,27 @@ func testMultiUserLongRead(t *testing.T, mm MetricRW) {
 
 	for _, uid := range []int64{1, 2, 3, 327} {
 
-		err := mm.WritePoint("points", uid, 1000, 3, 1451635204)
+		err := mm.OldWritePoint("points", uid, 1000, 3, 1451635204)
 		if err != nil {
 			t.Fail()
 		}
 
-		err = mm.WritePoint("points", uid, 200, 3, 1454313600)
+		err = mm.OldWritePoint("points", uid, 200, 3, 1454313600)
 		if err != nil {
 			t.Fail()
 		}
 
-		err = mm.WritePoint("points", uid, 2802, 3, 1458061005)
+		err = mm.OldWritePoint("points", uid, 2802, 3, 1458061005)
 		if err != nil {
 			t.Fail()
 		}
 
-		err = mm.WritePoint("points", uid, 11, 3, 1458061008)
+		err = mm.OldWritePoint("points", uid, 11, 3, 1458061008)
 		if err != nil {
 			t.Fail()
 		}
 
-		err = mm.WritePoint("points", uid, 1, 3, 1458061011)
+		err = mm.OldWritePoint("points", uid, 1, 3, 1458061011)
 		if err != nil {
 			t.Fail()
 		}
