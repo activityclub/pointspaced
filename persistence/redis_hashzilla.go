@@ -310,10 +310,6 @@ func (self RedisHZ) requestsForRange(start_ts int64, end_ts int64) map[string]Re
 
 func (self RedisHZ) OldWritePoint(thing string, userId, value, activityId, ts int64) error {
 	sopts := make(map[string]string)
-	sopts["device"] = "ios"
-	sopts["tz"] = "America/New_York"
-	sopts["gender"] = "m"
-	sopts["service"] = "fitbit"
 	sopts["thing"] = thing
 
 	iopts := make(map[string]int64)
@@ -337,12 +333,7 @@ func (self RedisHZ) WritePoint(sopts map[string]string, iopts map[string]int64) 
 	ts := iopts["ts"]
 
 	if (value == 0) ||
-		(userId == 0) ||
-		(device == "") ||
-		(service == "") ||
-		(tz == "") ||
 		(ts == 0) ||
-		(activityId == 0) ||
 		(thing == "") {
 		return errors.New("invalid arguments")
 	}
@@ -370,11 +361,29 @@ func (self RedisHZ) WritePoint(sopts map[string]string, iopts map[string]int64) 
 			// hz:ios:0:0:0:0:0:points
 
 			for _, d := range []string{"0", device} {
+				if d == "" {
+					continue
+				}
 				for _, t := range []string{"0", tz} {
+					if t == "" {
+						continue
+					}
 					for _, u := range []int64{0, userId} {
+						if u == -1 {
+							continue
+						}
 						for _, g := range []string{"0", gender} {
+							if g == "" {
+								continue
+							}
 							for _, a := range []int64{0, activityId} {
+								if a == 01 {
+									continue
+								}
 								for _, s := range []string{"0", service} {
+									if s == "" {
+										continue
+									}
 
 									key := fmt.Sprintf("hz:%s:%s:%d:%s:%d:%s:%s:%s",
 										d, t, u, g, a, s, thing, bucket)
