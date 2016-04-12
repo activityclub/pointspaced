@@ -100,7 +100,7 @@ func (self RedisHZ) ReadBuckets(uids []int64, metric string, aTypes []int64, sta
 
 			for _, request := range requests {
 				// hz:device:tz:user_id:g:activity_id:service:thing:time
-				key := "hz:0:0:" + struid + "0:0:0:" + metric + ":" + request.TimeBucket
+				key := "hz:0:0:" + struid + ":0:0:0:" + metric + ":" + request.TimeBucket
 				item := []interface{}{}
 
 				qmin, _ := strconv.Atoi(request.QueryMin())
@@ -325,8 +325,6 @@ func (self RedisHZ) OldWritePoint(thing string, userId, value, activityId, ts in
 }
 
 func (self RedisHZ) WritePoint(sopts map[string]string, iopts map[string]int64) error {
-	// hz:device:tz:user_id:g:activity_id:service:thing:time
-
 	device := sopts["device"]
 	tz := sopts["tz"]
 	gender := sopts["gender"]
