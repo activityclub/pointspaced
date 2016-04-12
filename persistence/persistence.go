@@ -29,7 +29,7 @@ type QueryResponse struct {
 }
 
 type MetricRW interface {
-	WritePoint(flavor string, userId int64, value int64, activityTypeId int64, timestamp int64) error
+	WritePoint(sopts map[string]string, iopts map[string]int64) error
 	ReadBuckets(uids []int64, metric string, aTypes []int64, start_ts int64, end_ts int64, debug string) QueryResponse
 }
 

@@ -306,19 +306,31 @@ func (self RedisHZ) requestsForRange(start_ts int64, end_ts int64) map[string]Re
 
 }
 
-func (self RedisHZ) WritePoint(flavor string, userId int64, value int64, activityTypeId int64, timestamp int64) error {
+func (self RedisHZ) WritePoint(sopts map[string]string, iopts map[string]int64) error {
+	// hz:device:tz:user_id:g:activity_id:service:thing:time
+
+	device := sopts["device"]
+	tz := sopt["tz"]
+	g := sopt["g"]
+	service := sopt["service"]
+	thing := sopt["thing"]
+
+	userId := iopts["userId"]
+	activityId := iopts["activityId"]
+	value := iopts["value"]
+	ts := iopts["ts"]
 
 	if (value == 0) ||
 		(userId == 0) ||
-		(timestamp == 0) ||
-		(activityTypeId == 0) ||
-		(flavor == "") {
+		(ts == 0) ||
+		(activityId == 0) ||
+		(thing == "") {
 		return errors.New("invalid arguments")
 	}
 
 	strUserId := strconv.FormatInt(userId, 10)
 
-	buckets, err := self.bucketsForJob(timestamp)
+	buckets, err := self.bucketsForJob(ts)
 
 	r := psdcontext.Ctx.RedisPool.Get()
 
@@ -329,10 +341,25 @@ func (self RedisHZ) WritePoint(flavor string, userId int64, value int64, activit
 		for idx, bucket := range buckets {
 			// figure out when this is
 
-			set_timestamp := time.Unix(timestamp, int64(0)).UTC().Format("20060102150405")
+			set_timestamp := time.Unix(ts, int64(0)).UTC().Format("20060102150405")
 			if len(buckets) > idx+1 {
 				set_timestamp = buckets[idx+1]
 			}
+
+			// hz:device:tz:user_id:g:activity_id:service:thing:time
+			// hz:ios:la:1:m:3:fitbit:points
+			// hz:0:0:0:0:0:0:points
+
+			// hz:ios:0:0:0:0:0:points
+			// hz:0:la:0:0:0:0:points
+			// hz:0:0:0:m:0:0:points
+			// hz:0:0:0:0:3:0:points
+			// hz:0:0:0:0:0:fitbit:points
+
+			// hz:ios:la:0:0:0:0:points
+			// hz:ios:0:0:m:0:0:points
+			// hz:ios:0:0:0:3:0:points
+			// hz:ios:0:0:0:0:fitbit:points
 
 			for _, aType := range []int64{0, activityTypeId} {
 
