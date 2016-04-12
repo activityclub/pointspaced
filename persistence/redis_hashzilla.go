@@ -99,7 +99,8 @@ func (self RedisHZ) ReadBuckets(uids []int64, metric string, aTypes []int64, sta
 			struid := strconv.FormatInt(uid, 10)
 
 			for _, request := range requests {
-				key := "hz:" + struid + ":0:" + metric + ":" + request.TimeBucket
+				// hz:device:tz:user_id:g:activity_id:service:thing:time
+				key := "hz:0:0:" + struid + "0:0:0:" + metric + ":" + request.TimeBucket
 				item := []interface{}{}
 
 				qmin, _ := strconv.Atoi(request.QueryMin())

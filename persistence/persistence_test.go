@@ -103,6 +103,7 @@ func TestHZ(t *testing.T) {
 	testMetricRWInterface(t, NewMetricManagerHZ())
 }
 
+/*
 func BenchmarkSimple_WriteOneHundred(b *testing.B) {
 	benchmarkWriteN(b, NewMetricManagerSimple(), 100)
 }
@@ -168,6 +169,7 @@ func BenchmarkACR_MultiUserRead(b *testing.B) {
 func BenchmarkACR_ManyMultiUserRead(b *testing.B) {
 	benchManyMultiUserLongRead(b, NewMetricManagerACR())
 }
+*/
 
 // ------
 func BenchmarkHZ_WriteOneHundred(b *testing.B) {
@@ -208,36 +210,12 @@ func testMetricRWInterface(t *testing.T, mm MetricRW) {
 	testEvenLongerMultiDayValidRead(t, mm)
 	testReallyLongValidRead(t, mm)
 	testMultiUserLongRead(t, mm)
-	testAPS(t, mm)
 }
 
 func clearRedisCompletely() {
 	r := psdcontext.Ctx.RedisPool.Get()
 	r.Do("flushall")
 	r.Close()
-}
-
-func testAPS(t *testing.T, mm MetricRW) {
-	clearRedisCompletely()
-
-	mm.OldWritePoint("points", 1, 10, 3, 1458061005) // 2016-03-15 16:56:45
-	mm.OldWritePoint("points", 2, 10, 3, 1458061005)
-	mm.OldWritePoint("points", 327, 11, 3, 1458061005)
-
-	mm.OldWritePoint("points", 1, 10, 3, 1458061006)
-	mm.OldWritePoint("points", 2, 10, 3, 1458061006)
-	mm.OldWritePoint("points", 327, 11, 3, 1458061007)
-
-	mm.OldWritePoint("points", 1, 10, 3, 1458061009)
-	mm.OldWritePoint("points", 2, 10, 3, 1458061009)
-	mm.OldWritePoint("points", 327, 11, 3, 1458061009)
-
-	mm.OldWritePoint("distance", 11, 10, 5, 1458061010) // no steps involved, user 11 also no weight
-	mm.OldWritePoint("calories", 11, 10, 5, 1458061010) // no steps involved, user 11 also no weight
-	mm.OldWritePoint("steps", 12, 10, 3, 1458061010)    // user 12 has no weight, can't get points
-	mm.OldWritePoint("points", 1327, 11, 1, 1458061010) // activity_type 1 should still be included
-
-	//res := mm.ComputeAPS(1458061005, 1458061010) // 12
 }
 
 func testValidRead(t *testing.T, mm MetricRW) {
@@ -412,7 +390,7 @@ func benchmarkWriteN(b *testing.B, mm MetricRW, amnt int) {
 		for {
 			for _, uid := range []int64{1, 2, 3, 327, 4, 22, 77, 24, 99, 1929, 2854, 412, 413, 728, 729, 828, 17000, 17001, 17002, 17003, 17004, 17005, 17006, 17007, 17008, 17009, 17010, 17011,
 				17012, 17013, 17014, 17015, 17016, 17017, 17018, 17019, 17020, 17021, 17022, 17023, 17024, 17025, 17026, 17027, 17028, 17029, 17030, 17031, 17032, 17033, 17034, 17035, 17036, 17037, 17038, 17039, 17040} {
-				err := mm.WritePoint("steps", uid, 10, 3, src[iteration])
+				err := mm.OldWritePoint("steps", uid, 10, 3, src[iteration])
 				if err != nil {
 					fmt.Println(err.Error())
 					b.Fail()
