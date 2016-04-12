@@ -307,6 +307,10 @@ func (self RedisHZ) requestsForRange(start_ts int64, end_ts int64) map[string]Re
 
 }
 
+func (self RedisHZ) OldWritePoint(thing string, userId, value, activityId, ts int64) error {
+	return nil
+}
+
 func (self RedisHZ) WritePoint(sopts map[string]string, iopts map[string]int64) error {
 	// hz:device:tz:user_id:g:activity_id:service:thing:time
 
