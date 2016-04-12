@@ -37,6 +37,7 @@ type MetricManager struct {
 	MetricRW
 }
 
+/*
 func NewMetricManagerSimple() *MetricManager {
 	mm := MetricManager{}
 	mm.MetricRW = RedisSimple{}
@@ -47,7 +48,7 @@ func NewMetricManagerACR() *MetricManager {
 	mm := MetricManager{}
 	mm.MetricRW = RedisACR{}
 	return &mm
-}
+} */
 
 func NewMetricManagerHZ() *MetricManager {
 	mm := MetricManager{}

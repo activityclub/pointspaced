@@ -20,8 +20,8 @@ func ProcessMetricJob(metric MetricJob) {
 	fmt.Println("-> [MetricJob] Processing Job, STEPS=", metric.Steps)
 	fmt.Println("\tTs=", metric.Timestamp)
 	if curManager == nil {
-		curManager = persistence.NewMetricManagerSimple()
+		curManager = persistence.NewMetricManagerHZ()
 	}
-	curManager.MetricRW.WritePoint("steps", metric.UserId, metric.Steps, metric.ActivityTypeId, metric.Timestamp)
-	curManager.MetricRW.WritePoint("points", metric.UserId, metric.Points, metric.ActivityTypeId, metric.Timestamp)
+	//curManager.MetricRW.WritePoint("steps", metric.UserId, metric.Steps, metric.ActivityTypeId, metric.Timestamp)
+	//curManager.MetricRW.WritePoint("points", metric.UserId, metric.Points, metric.ActivityTypeId, metric.Timestamp)
 }

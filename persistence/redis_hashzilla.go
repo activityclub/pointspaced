@@ -7,6 +7,7 @@ import "sync"
 import "pointspaced/psdcontext"
 import "github.com/garyburd/redigo/redis"
 import "github.com/ugorji/go/codec"
+import "fmt"
 
 type RedisHZ struct {
 }
@@ -310,10 +311,10 @@ func (self RedisHZ) WritePoint(sopts map[string]string, iopts map[string]int64) 
 	// hz:device:tz:user_id:g:activity_id:service:thing:time
 
 	device := sopts["device"]
-	tz := sopt["tz"]
-	g := sopt["g"]
-	service := sopt["service"]
-	thing := sopt["thing"]
+	tz := sopts["tz"]
+	gender := sopts["gender"]
+	service := sopts["service"]
+	thing := sopts["thing"]
 
 	userId := iopts["userId"]
 	activityId := iopts["activityId"]
@@ -322,13 +323,14 @@ func (self RedisHZ) WritePoint(sopts map[string]string, iopts map[string]int64) 
 
 	if (value == 0) ||
 		(userId == 0) ||
+		(device == "") ||
+		(service == "") ||
+		(tz == "") ||
 		(ts == 0) ||
 		(activityId == 0) ||
 		(thing == "") {
 		return errors.New("invalid arguments")
 	}
-
-	strUserId := strconv.FormatInt(userId, 10)
 
 	buckets, err := self.bucketsForJob(ts)
 
@@ -351,29 +353,29 @@ func (self RedisHZ) WritePoint(sopts map[string]string, iopts map[string]int64) 
 			// hz:0:0:0:0:0:0:points
 
 			// hz:ios:0:0:0:0:0:points
-			// hz:0:la:0:0:0:0:points
-			// hz:0:0:0:m:0:0:points
-			// hz:0:0:0:0:3:0:points
-			// hz:0:0:0:0:0:fitbit:points
 
-			// hz:ios:la:0:0:0:0:points
-			// hz:ios:0:0:m:0:0:points
-			// hz:ios:0:0:0:3:0:points
-			// hz:ios:0:0:0:0:fitbit:points
+			for _, d := range []string{"0", device} {
+				for _, t := range []string{"0", tz} {
+					for _, u := range []int64{0, userId} {
+						for _, g := range []string{"0", gender} {
+							for _, a := range []int64{0, activityId} {
+								for _, s := range []string{"0", service} {
 
-			for _, aType := range []int64{0, activityTypeId} {
+									key := fmt.Sprintf("hz:%s:%s:%d:%s:%d:%s:%s:%s",
+										d, t, u, g, a, s, thing, bucket)
 
-				strAType := strconv.FormatInt(aType, 10)
-
-				key := "hz:" + strUserId + ":" + strAType + ":" + flavor + ":" + bucket
-
-				// TODO LOCKING
-				r.Send("MULTI")
-				r.Send("HINCRBY", key, set_timestamp, value)
-				r.Send("EXPIRE", key, psdcontext.Ctx.Config.Redis.Expire)
-				_, err := r.Do("EXEC")
-				if err != nil {
-					return err
+									// TODO LOCKING
+									r.Send("MULTI")
+									r.Send("HINCRBY", key, set_timestamp, value)
+									r.Send("EXPIRE", key, psdcontext.Ctx.Config.Redis.Expire)
+									_, err := r.Do("EXEC")
+									if err != nil {
+										return err
+									}
+								}
+							}
+						}
+					}
 				}
 			}
 		}
