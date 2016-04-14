@@ -377,7 +377,7 @@ func (self RedisHZ) WritePoint(sopts map[string]string, iopts map[string]int64) 
 								continue
 							}
 							for _, a := range []int64{0, activityId} {
-								if a == 01 {
+								if a == -1 {
 									continue
 								}
 								for _, s := range []string{"0", service} {
