@@ -317,16 +317,19 @@ func (self RedisHZ) OldWritePoint(thing string, userId, value, activityId, ts in
 	iopts["activityId"] = activityId
 	iopts["value"] = value
 	iopts["ts"] = ts
+	iopts["service"] = -1
+	iopts["device"] = -1
+	iopts["gender"] = -1
 	return self.WritePoint(sopts, iopts)
 }
 
 func (self RedisHZ) WritePoint(sopts map[string]string, iopts map[string]int64) error {
-	device := sopts["device"]
 	tz := sopts["tz"]
-	gender := sopts["gender"]
-	service := sopts["service"]
 	thing := sopts["thing"]
 
+	service := iopts["service"]
+	device := iopts["device"]
+	gender := iopts["gender"]
 	userId := iopts["userId"]
 	activityId := iopts["activityId"]
 	value := iopts["value"]
@@ -360,8 +363,8 @@ func (self RedisHZ) WritePoint(sopts map[string]string, iopts map[string]int64) 
 
 			// hz:ios:0:0:0:0:0:points
 
-			for _, d := range []string{"0", device} {
-				if d == "" {
+			for _, d := range []int64{0, device} {
+				if d == -1 {
 					continue
 				}
 				for _, t := range []string{"0", tz} {
@@ -372,20 +375,20 @@ func (self RedisHZ) WritePoint(sopts map[string]string, iopts map[string]int64) 
 						if u == -1 {
 							continue
 						}
-						for _, g := range []string{"0", gender} {
-							if g == "" {
+						for _, g := range []int64{0, gender} {
+							if g == -1 {
 								continue
 							}
 							for _, a := range []int64{0, activityId} {
 								if a == -1 {
 									continue
 								}
-								for _, s := range []string{"0", service} {
-									if s == "" {
+								for _, s := range []int64{0, service} {
+									if s == -1 {
 										continue
 									}
 
-									key := fmt.Sprintf("hz:%s:%s:%d:%s:%d:%s:%s:%s",
+									key := fmt.Sprintf("hz:%d:%s:%d:%d:%d:%d:%s:%s",
 										d, t, u, g, a, s, thing, bucket)
 
 									// TODO LOCKING
