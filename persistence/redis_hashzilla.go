@@ -309,39 +309,38 @@ func (self RedisHZ) requestsForRange(start_ts int64, end_ts int64) map[string]Re
 }
 
 func (self RedisHZ) OldWritePoint(thing string, userId, value, activityId, ts int64) error {
-	sopts := make(map[string]string)
-	sopts["thing"] = thing
-
-	iopts := make(map[string]int64)
-	iopts["userId"] = userId
-	iopts["activityId"] = activityId
-	iopts["value"] = value
-	iopts["ts"] = ts
-	iopts["service"] = -1
-	iopts["device"] = -1
-	iopts["gender"] = -1
-	return self.WritePoint(sopts, iopts)
+	opts := make(map[string]string)
+	opts["thing"] = thing
+	opts["tz"] = ""
+	opts["uid"] = fmt.Sprintf("%d", userId)
+	opts["aid"] = fmt.Sprintf("%d", activityId)
+	opts["value"] = fmt.Sprintf("%d", value)
+	opts["ts"] = fmt.Sprintf("%d", ts)
+	opts["sid"] = ""
+	opts["did"] = ""
+	opts["gid"] = ""
+	return self.WritePoint(opts)
 }
 
-func (self RedisHZ) WritePoint(sopts map[string]string, iopts map[string]int64) error {
-	tz := sopts["tz"]
-	thing := sopts["thing"]
+func (self RedisHZ) WritePoint(opts map[string]string) error {
+	tz := opts["tz"]
+	thing := opts["thing"]
+	sid := opts["sid"]
+	did := opts["did"]
+	gid := opts["gid"]
+	uid := opts["uid"]
+	aid := opts["aid"]
+	value := opts["value"]
+	ts := opts["ts"]
+	tsi, _ := strconv.ParseInt(ts, 10, 64)
 
-	service := iopts["service"]
-	device := iopts["device"]
-	gender := iopts["gender"]
-	userId := iopts["userId"]
-	activityId := iopts["activityId"]
-	value := iopts["value"]
-	ts := iopts["ts"]
-
-	if (value == 0) ||
-		(ts == 0) ||
+	if (value == "") ||
+		(ts == "") ||
 		(thing == "") {
 		return errors.New("invalid arguments")
 	}
 
-	buckets, err := self.bucketsForJob(ts)
+	buckets, err := self.bucketsForJob(tsi)
 
 	r := psdcontext.Ctx.RedisPool.Get()
 
@@ -352,7 +351,7 @@ func (self RedisHZ) WritePoint(sopts map[string]string, iopts map[string]int64) 
 		for idx, bucket := range buckets {
 			// figure out when this is
 
-			set_timestamp := time.Unix(ts, int64(0)).UTC().Format("20060102150405")
+			set_timestamp := time.Unix(tsi, int64(0)).UTC().Format("20060102150405")
 			if len(buckets) > idx+1 {
 				set_timestamp = buckets[idx+1]
 			}
@@ -363,32 +362,32 @@ func (self RedisHZ) WritePoint(sopts map[string]string, iopts map[string]int64) 
 
 			// hz:ios:0:0:0:0:0:points
 
-			for _, d := range []int64{0, device} {
-				if d == -1 {
+			for _, d := range []string{"0", did} {
+				if d == "" {
 					continue
 				}
 				for _, t := range []string{"0", tz} {
 					if t == "" {
 						continue
 					}
-					for _, u := range []int64{0, userId} {
-						if u == -1 {
+					for _, u := range []string{"0", uid} {
+						if u == "" {
 							continue
 						}
-						for _, g := range []int64{0, gender} {
-							if g == -1 {
+						for _, g := range []string{"0", gid} {
+							if g == "" {
 								continue
 							}
-							for _, a := range []int64{0, activityId} {
-								if a == -1 {
+							for _, a := range []string{"0", aid} {
+								if a == "" {
 									continue
 								}
-								for _, s := range []int64{0, service} {
-									if s == -1 {
+								for _, s := range []string{"0", sid} {
+									if s == "" {
 										continue
 									}
 
-									key := fmt.Sprintf("hz:%d:%s:%d:%d:%d:%d:%s:%s",
+									key := fmt.Sprintf("hz:%s:%s:%s:%s:%s:%s:%s:%s",
 										d, t, u, g, a, s, thing, bucket)
 
 									// TODO LOCKING

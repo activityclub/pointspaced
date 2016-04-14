@@ -1,11 +1,9 @@
 package v1
 
-import (
-	"github.com/gin-gonic/gin"
-	"pointspaced/persistence"
-	"strconv"
-	"strings"
-)
+import "github.com/gin-gonic/gin"
+import "pointspaced/persistence"
+import "strconv"
+import "strings"
 
 // query takes
 //  activity_types [48,4]
