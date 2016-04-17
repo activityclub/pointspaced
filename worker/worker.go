@@ -26,7 +26,7 @@ func Run() {
 	q, _ := nsq.NewConsumer("psd", "psd", config)
 	q.AddHandler(nsq.HandlerFunc(func(nsqMsg *nsq.Message) error {
 
-		fmt.Println(nsqMsg.Body)
+		fmt.Println(string(nsqMsg.Body))
 		message := WorkerMessage{}
 
 		err := json.Unmarshal(nsqMsg.Body, &message)
