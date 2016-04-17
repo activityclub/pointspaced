@@ -47,7 +47,7 @@ func NewRedisHZRequest(bucket string, scoremin int, scoremax int) RedisHZRequest
 	return r
 }
 
-func (self RedisHZ) ReadBuckets(uids []int64, metric string, aTypes []int64, start_ts int64, end_ts int64, debug string) QueryResponse {
+func (self RedisHZ) ReadBuckets(uids []int64, metric string, aTypes []int64, start_ts int64, end_ts int64) QueryResponse {
 
 	//fmt.Println("[Hashzilla] START", start_ts, "END", end_ts)
 	requests := self.requestsForRange(start_ts, end_ts)
