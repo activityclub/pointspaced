@@ -95,7 +95,7 @@ func addSumNormalBuckets(buckets []string, uids []int64, metric string, aTypes [
 			sum += sumFromRedis(buckets, uid, atype, metric)
 		}
 
-		qr.UserToSum[uid] += sum
+		qr.UserToSum[fmt.Sprintf("%d", uid)] += sum
 	}
 }
 
@@ -122,7 +122,7 @@ func determineRangeType(start_ts, end_ts int64) int {
 
 func readBucketsType2(uids []int64, metric string, aTypes []int64, start_ts int64, end_ts int64) QueryResponse {
 	qr := QueryResponse{}
-	qr.UserToSum = make(map[int64]int64)
+	qr.UserToSum = make(map[string]int64)
 
 	min, bhour, _, _, _ := before_times(start_ts)
 
@@ -143,7 +143,7 @@ func readBucketsType2(uids []int64, metric string, aTypes []int64, start_ts int6
 
 func readBucketsType3(uids []int64, metric string, aTypes []int64, start_ts int64, end_ts int64) QueryResponse {
 	qr := QueryResponse{}
-	qr.UserToSum = make(map[int64]int64)
+	qr.UserToSum = make(map[string]int64)
 
 	min, hour, bday, _, _ := before_times(start_ts)
 
@@ -171,7 +171,7 @@ func readBucketsType3(uids []int64, metric string, aTypes []int64, start_ts int6
 
 func readBucketsType4(uids []int64, metric string, aTypes []int64, start_ts int64, end_ts int64) QueryResponse {
 	qr := QueryResponse{}
-	qr.UserToSum = make(map[int64]int64)
+	qr.UserToSum = make(map[string]int64)
 
 	min, hour, bday, _, _ := before_times(start_ts)
 
@@ -217,7 +217,7 @@ func readBucketsType4(uids []int64, metric string, aTypes []int64, start_ts int6
 
 func readBucketsType5(uids []int64, metric string, aTypes []int64, start_ts int64, end_ts int64) QueryResponse {
 	qr := QueryResponse{}
-	qr.UserToSum = make(map[int64]int64)
+	qr.UserToSum = make(map[string]int64)
 
 	min, hour, day, bmonth, _ := before_times(start_ts)
 
@@ -251,7 +251,7 @@ func readBucketsType5(uids []int64, metric string, aTypes []int64, start_ts int6
 
 func readBucketsType6(uids []int64, metric string, aTypes []int64, start_ts int64, end_ts int64) QueryResponse {
 	qr := QueryResponse{}
-	qr.UserToSum = make(map[int64]int64)
+	qr.UserToSum = make(map[string]int64)
 
 	min, hour, day, month, byear := before_times(start_ts)
 
@@ -294,7 +294,7 @@ func (self RedisSimple) ReadBuckets(uids []int64, metric string, aTypes []int64,
 
 	if timeRangeType == 1 {
 		qr := QueryResponse{}
-		qr.UserToSum = make(map[int64]int64)
+		qr.UserToSum = make(map[string]int64)
 		sec_buckets := bucketsForSecs(start_ts, end_ts)
 		addSumNormalBuckets(sec_buckets, uids, metric, aTypes, &qr)
 		return qr

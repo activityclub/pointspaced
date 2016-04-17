@@ -3,6 +3,7 @@ package v1
 import "github.com/gin-gonic/gin"
 import "pointspaced/persistence"
 import "strconv"
+import "fmt"
 
 //import "strings"
 
@@ -35,6 +36,7 @@ func Query(c *gin.Context) {
 
 	mm := persistence.NewMetricManagerHZ()
 	qr := mm.ReadBuckets(uids, thing, uids, start_ts_int, end_ts_int)
+	fmt.Println(qr)
 
 	c.JSON(200, qr)
 }

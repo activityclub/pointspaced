@@ -54,7 +54,7 @@ func (self RedisHZ) ReadBuckets(uids []int64, metric string, aTypes []int64, sta
 	//fmt.Println("[Hashzilla] Requests:", requests)
 
 	qr := QueryResponse{}
-	qr.UserToSum = make(map[int64]int64, len(uids))
+	qr.UserToSum = make(map[string]int64, len(uids))
 
 	var wg sync.WaitGroup
 	wg.Add(len(uids))
@@ -132,7 +132,7 @@ func (self RedisHZ) ReadBuckets(uids []int64, metric string, aTypes []int64, sta
 	go func() {
 		for entry := range results {
 			for k, v := range entry {
-				qr.UserToSum[k] = v
+				qr.UserToSum[fmt.Sprintf("%d", k)] = v
 			}
 			wg.Done()
 		}
