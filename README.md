@@ -1,3 +1,6 @@
+## curl
+curl -d uid=327 -d gid=0 -d did=1 -d sid=9 -d tz=-13600 -d ts=1460663780 -d thing=cred -d value=123 "http://localhost:1155/v1/write"
+
 ## building
 
 to start pointspaced, you gotta do

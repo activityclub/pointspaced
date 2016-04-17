@@ -4,24 +4,38 @@ import "fmt"
 import "pointspaced/persistence"
 
 type MetricJob struct {
-	UserId           int64 `json:"user_id"`
-	Steps            int64 `json:"steps"`
-	Points           int64 `json:"points"`
-	Distance         int64 `json:"distance"`
-	CaloriesBurned   int64 `json:"calories_burned"`
-	CaloriesConsumed int64 `json:"calories_consumed"`
-	ActivityTypeId   int64 `json:"activity_type_id"`
-	Timestamp        int64 `json:"timestamp"`
+	thing string `json:"thing"`
+	tz    int64  `json:"tz"`
+	uid   int64  `json:"uid"`
+	aid   int64  `json:"aid"`
+	value int64  `json:"value"`
+	ts    int64  `json:"ts"`
+	sid   int64  `json:"sid"`
+	did   int64  `json:"did"`
+	gid   int64  `json:"gid"`
 }
 
 var curManager *persistence.MetricManager = nil
 
 func ProcessMetricJob(metric MetricJob) {
-	fmt.Println("-> [MetricJob] Processing Job, STEPS=", metric.Steps)
-	fmt.Println("\tTs=", metric.Timestamp)
+	fmt.Println("-> [MetricJob] Processing Job, THING=", metric.thing)
+	fmt.Println("\tTs=", metric.ts)
 	if curManager == nil {
 		curManager = persistence.NewMetricManagerHZ()
 	}
-	//curManager.MetricRW.WritePoint("steps", metric.UserId, metric.Steps, metric.ActivityTypeId, metric.Timestamp)
-	//curManager.MetricRW.WritePoint("points", metric.UserId, metric.Points, metric.ActivityTypeId, metric.Timestamp)
+	opts := make(map[string]string)
+	opts["thing"] = metric.thing
+	opts["tz"] = fmt.Sprintf("%d", metric.tz)
+	opts["uid"] = fmt.Sprintf("%d", metric.uid)
+	opts["aid"] = fmt.Sprintf("%d", metric.aid)
+	opts["value"] = fmt.Sprintf("%d", metric.value)
+	opts["ts"] = fmt.Sprintf("%d", metric.ts)
+	opts["sid"] = fmt.Sprintf("%d", metric.sid)
+	opts["did"] = fmt.Sprintf("%d", metric.did)
+	opts["gid"] = fmt.Sprintf("%d", metric.gid)
+
+	err := curManager.WritePoint(opts)
+	if err != nil {
+		fmt.Println("trying to write a point and " + err.Error())
+	}
 }

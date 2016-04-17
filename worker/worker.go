@@ -6,6 +6,7 @@ import "github.com/bitly/go-nsq"
 import "encoding/json"
 import "sync"
 import "log"
+import "fmt"
 
 type WorkerMessage struct {
 	Command   string         `json:"command"`
@@ -22,9 +23,10 @@ func Run() {
 	config := nsq.NewConfig()
 
 	// todo pull the topic and channel names out of config
-	q, _ := nsq.NewConsumer("write_test", "ch", config)
+	q, _ := nsq.NewConsumer("psd", "psd", config)
 	q.AddHandler(nsq.HandlerFunc(func(nsqMsg *nsq.Message) error {
 
+		fmt.Println(nsqMsg.Body)
 		message := WorkerMessage{}
 
 		err := json.Unmarshal(nsqMsg.Body, &message)
