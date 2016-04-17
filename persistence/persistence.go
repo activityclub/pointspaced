@@ -25,7 +25,6 @@ func NewRedisPool(server string) *redis.Pool {
 
 type QueryResponse struct {
 	UserToSum map[string]int64 `json:"results"`
-	Debug     []string         `json:"debug"`
 }
 
 type MetricRW interface {

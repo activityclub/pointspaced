@@ -9,7 +9,7 @@ import "fmt"
 
 func Query(c *gin.Context) {
 
-	thing := c.Param("thing")
+	thing := c.Param("metric")
 	//uidStr := c.Param("uids")
 	//activity_types := c.Param("activity_types")
 	start_ts := c.Param("start_ts")
