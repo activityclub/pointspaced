@@ -5,7 +5,7 @@ import "pointspaced/persistence"
 
 type MetricJob struct {
 	Thing string `json:"thing"`
-	Tz    int64  `json:"tz"`
+	Tz    string `json:"tz"`
 	Uid   int64  `json:"uid"`
 	Aid   int64  `json:"aid"`
 	Value int64  `json:"value"`
@@ -25,7 +25,7 @@ func ProcessMetricJob(metric MetricJob) {
 	}
 	opts := make(map[string]string)
 	opts["thing"] = metric.Thing
-	opts["tz"] = fmt.Sprintf("%d", metric.Tz)
+	opts["tz"] = metric.Tz
 	opts["uid"] = fmt.Sprintf("%d", metric.Uid)
 	opts["aid"] = fmt.Sprintf("%d", metric.Aid)
 	opts["value"] = fmt.Sprintf("%d", metric.Value)
