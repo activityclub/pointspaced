@@ -240,19 +240,19 @@ func testValidRead(t *testing.T, mm MetricRW) {
 	}
 
 	// lets try to read all but the last
-	res := mm.ReadBuckets([]int64{1}, "points", []int64{3}, 1458061005, 1458061010, "0")
-	if res.UserToSum[1] != 21 {
+	res := mm.ReadBuckets([]int64{1}, "points", []int64{3}, 1458061005, 1458061010)
+	if res.UserToSum["1"] != 21 {
 		fmt.Println("XXX", res.UserToSum)
-		t.Logf("Incorrect Sum.  Expected 21, Received %d", res.UserToSum[1])
+		t.Logf("Incorrect Sum.  Expected 21, Received %d", res.UserToSum["1"])
 		t.Fail()
 	}
 }
 
 func testReallyLongValidRead(t *testing.T, mm MetricRW) {
 	clearRedisCompletely()
-	res := mm.ReadBuckets([]int64{1}, "points", []int64{3}, 1268082893, 1458061010, "0")
-	if res.UserToSum[1] != 0 {
-		t.Errorf("Incorrect Sum.  Expected 0, Received %d", res.UserToSum[1])
+	res := mm.ReadBuckets([]int64{1}, "points", []int64{3}, 1268082893, 1458061010)
+	if res.UserToSum["1"] != 0 {
+		t.Errorf("Incorrect Sum.  Expected 0, Received %d", res.UserToSum["1"])
 	}
 }
 
@@ -277,9 +277,9 @@ func testMultiDayValidRead(t *testing.T, mm MetricRW) {
 	if err != nil {
 		t.Fail()
 	}
-	res := mm.ReadBuckets([]int64{1}, "points", []int64{3}, 1455481907, 1458061010, "0")
-	if res.UserToSum[1] != 21 {
-		t.Errorf("Incorrect Sum.  Expected 21, Received %d", res.UserToSum[1])
+	res := mm.ReadBuckets([]int64{1}, "points", []int64{3}, 1455481907, 1458061010)
+	if res.UserToSum["1"] != 21 {
+		t.Errorf("Incorrect Sum.  Expected 21, Received %d", res.UserToSum["1"])
 	}
 }
 
@@ -314,14 +314,14 @@ func testEvenLongerMultiDayValidRead(t *testing.T, mm MetricRW) {
 		t.Fail()
 	}
 
-	res := mm.ReadBuckets([]int64{1}, "points", []int64{3}, 1451635200, 1458061011, "0")
-	if res.UserToSum[1] != 322 {
+	res := mm.ReadBuckets([]int64{1}, "points", []int64{3}, 1451635200, 1458061011)
+	if res.UserToSum["1"] != 322 {
 		fmt.Println("res", res)
-		t.Errorf("Incorrect Sum.  Expected 322, Received %d", res.UserToSum[1])
+		t.Errorf("Incorrect Sum.  Expected 322, Received %d", res.UserToSum["1"])
 	}
-	res = mm.ReadBuckets([]int64{1}, "points", []int64{3}, 1451635205, 1458061010, "0")
-	if res.UserToSum[1] != 221 {
-		t.Errorf("Incorrect Sum.  Expected 221, Received %d", res.UserToSum[1])
+	res = mm.ReadBuckets([]int64{1}, "points", []int64{3}, 1451635205, 1458061010)
+	if res.UserToSum["1"] != 221 {
+		t.Errorf("Incorrect Sum.  Expected 221, Received %d", res.UserToSum["1"])
 	}
 }
 
@@ -356,16 +356,18 @@ func testMultiUserLongRead(t *testing.T, mm MetricRW) {
 		}
 	}
 
-	res := mm.ReadBuckets([]int64{1, 2, 3, 327}, "points", []int64{3}, 1451635200, 1458061011, "0")
+	res := mm.ReadBuckets([]int64{1, 2, 3, 327}, "points", []int64{3}, 1451635200, 1458061011)
 	for _, uid := range []int64{1, 2, 3, 327} {
-		if res.UserToSum[uid] != 4014 {
-			t.Errorf("Incorrect Sum For Uid %d.  Expected 4014, Received %d", uid, res.UserToSum[uid])
+		s := fmt.Sprintf("%d", uid)
+		if res.UserToSum[s] != 4014 {
+			t.Errorf("Incorrect Sum For Uid %d.  Expected 4014, Received %d", uid, res.UserToSum[s])
 		}
 	}
 	for _, uid := range []int64{1, 2, 3, 327} {
-		res = mm.ReadBuckets([]int64{1, 2, 3, 327}, "points", []int64{3}, 1451635205, 1458061010, "0")
-		if res.UserToSum[uid] != 3013 {
-			t.Errorf("Incorrect Sum.  Expected 3013, Received %d", res.UserToSum[uid])
+		res = mm.ReadBuckets([]int64{1, 2, 3, 327}, "points", []int64{3}, 1451635205, 1458061010)
+		s := fmt.Sprintf("%d", uid)
+		if res.UserToSum[s] != 3013 {
+			t.Errorf("Incorrect Sum.  Expected 3013, Received %d", res.UserToSum[s])
 		}
 	}
 }
@@ -409,7 +411,7 @@ func benchShortRead(b *testing.B, mm MetricRW) {
 
 	clearRedisCompletely()
 	for i := 0; i < b.N; i++ {
-		mm.ReadBuckets([]int64{1}, "steps", []int64{3}, 1458061005, 1458061010, "0")
+		mm.ReadBuckets([]int64{1}, "steps", []int64{3}, 1458061005, 1458061010)
 	}
 
 }
@@ -418,7 +420,7 @@ func benchMediumRead(b *testing.B, mm MetricRW) {
 
 	clearRedisCompletely()
 	for i := 0; i < b.N; i++ {
-		mm.ReadBuckets([]int64{1}, "steps", []int64{3}, 1456262072, 1458162884, "0")
+		mm.ReadBuckets([]int64{1}, "steps", []int64{3}, 1456262072, 1458162884)
 	}
 
 }
@@ -427,7 +429,7 @@ func benchLongRead(b *testing.B, mm MetricRW) {
 
 	clearRedisCompletely()
 	for i := 0; i < b.N; i++ {
-		mm.ReadBuckets([]int64{1}, "steps", []int64{3}, 1268082893, 1458061010, "0")
+		mm.ReadBuckets([]int64{1}, "steps", []int64{3}, 1268082893, 1458061010)
 	}
 
 }
@@ -436,7 +438,7 @@ func benchMultiUserLongRead(b *testing.B, mm MetricRW) {
 
 	clearRedisCompletely()
 	for i := 0; i < b.N; i++ {
-		mm.ReadBuckets([]int64{1}, "steps", []int64{1, 2, 3, 327, 4, 22, 77, 24, 99, 1929, 2854, 412}, 1268082893, 1458061010, "0")
+		mm.ReadBuckets([]int64{1}, "steps", []int64{1, 2, 3, 327, 4, 22, 77, 24, 99, 1929, 2854, 412}, 1268082893, 1458061010)
 	}
 
 }
@@ -447,7 +449,7 @@ func benchManyMultiUserLongRead(b *testing.B, mm MetricRW) {
 	for i := 0; i < b.N; i++ {
 		mm.ReadBuckets([]int64{1}, "steps", []int64{1, 2, 3, 327, 4, 22, 77, 24, 99, 1929, 2854, 412, 413, 728, 729, 828, 17000, 17001, 17002, 17003, 17004, 17005, 17006, 17007, 17008, 17009, 17010, 17011,
 			17012, 17013, 17014, 17015, 17016, 17017, 17018, 17019, 17020, 17021, 17022, 17023, 17024, 17025, 17026, 17027, 17028, 17029, 17030, 17031, 17032, 17033, 17034, 17035, 17036, 17037, 17038, 17039, 17040,
-		}, 1268082893, 1458061010, "0")
+		}, 1268082893, 1458061010)
 	}
 
 }
