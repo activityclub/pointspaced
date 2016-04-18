@@ -9,11 +9,16 @@ import "fmt"
 
 func Query(c *gin.Context) {
 
-	thing := c.Param("metric")
+	thing := c.Param("thing")
 	//uidStr := c.Param("uids")
 	//activity_types := c.Param("activity_types")
 	start_ts := c.Param("start_ts")
 	end_ts := c.Param("end_ts")
+	group := c.Query("group")
+	if group == "" {
+		group = "uid"
+	}
+
 	uids := []int64{0}
 
 	/*
