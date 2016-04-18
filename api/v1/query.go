@@ -9,17 +9,23 @@ import "fmt"
 
 func Query(c *gin.Context) {
 
+	// r.GET("/v1/query/:dids/:tzs/:uids/:gids/:aids/:sids/:thing/:start_ts/:end_ts", v1.Query)
+
+	/*
+		dids := c.Param("dids")
+		tzs := c.Param("tzs")
+		uids := c.Param("uids")
+		gids := c.Param("gids")
+		aids := c.Param("aids")
+		sids := c.Param("sids") */
 	thing := c.Param("thing")
-	//uidStr := c.Param("uids")
-	//activity_types := c.Param("activity_types")
 	start_ts := c.Param("start_ts")
 	end_ts := c.Param("end_ts")
+
 	group := c.Query("group")
 	if group == "" {
-		group = "uid"
+		group = "uids"
 	}
-
-	uids := []int64{0}
 
 	/*
 		var uids = []int64{}
@@ -40,7 +46,8 @@ func Query(c *gin.Context) {
 	end_ts_int, _ := strconv.ParseInt(end_ts, 10, 64)
 
 	mm := persistence.NewMetricManagerHZ()
-	qr := mm.ReadBuckets(uids, thing, uids, start_ts_int, end_ts_int)
+	temp := []int64{0}
+	qr := mm.ReadBuckets(temp, thing, temp, start_ts_int, end_ts_int)
 	fmt.Println(qr)
 
 	c.JSON(200, qr)

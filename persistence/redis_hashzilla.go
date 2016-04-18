@@ -47,6 +47,44 @@ func NewRedisHZRequest(bucket string, scoremin int, scoremax int) RedisHZRequest
 	return r
 }
 
+func getMyValues(uid int64, results *chan map[int64]int64, requests *map[string]RedisHZRequest, metric string) {
+	r := psdcontext.Ctx.RedisPool.Get()
+	defer r.Close()
+
+	cmd := []interface{}{}
+
+	cmd = append(cmd, 0)
+
+	struid := strconv.FormatInt(uid, 10)
+
+	for _, request := range *requests {
+		// hz:device:tz:user_id:g:activity_id:service:thing:time
+		key := "hz:0:0:" + struid + ":0:0:0:" + metric + ":" + request.TimeBucket
+		item := []interface{}{}
+
+		qmin, _ := strconv.Atoi(request.QueryMin())
+		qmax, _ := strconv.Atoi(request.QueryMax())
+		item = append(item, key, qmin, qmax)
+		var b []byte = make([]byte, 0, 64)
+		var h codec.Handle = new(codec.MsgpackHandle)
+		var enc *codec.Encoder = codec.NewEncoderBytes(&b, h)
+		var err error = enc.Encode(item)
+		if err != nil {
+			panic(err)
+		}
+		cmd = append(cmd, b)
+	}
+
+	response, err := redis.Int64(psdcontext.Ctx.AgScript.Do(r, cmd...))
+	if err != nil {
+		panic(err)
+	}
+
+	entry := map[int64]int64{}
+	entry[uid] = response
+	*results <- entry
+}
+
 func (self RedisHZ) ReadBuckets(uids []int64, metric string, aTypes []int64, start_ts int64, end_ts int64) QueryResponse {
 
 	//fmt.Println("[Hashzilla] START", start_ts, "END", end_ts)
@@ -62,46 +100,7 @@ func (self RedisHZ) ReadBuckets(uids []int64, metric string, aTypes []int64, sta
 	results := make(chan map[int64]int64)
 
 	for _, uid := range uids {
-
-		go func(uid int64) {
-			r := psdcontext.Ctx.RedisPool.Get()
-			defer r.Close()
-
-			cmd := []interface{}{}
-
-			cmd = append(cmd, 0)
-
-			struid := strconv.FormatInt(uid, 10)
-
-			for _, request := range requests {
-				// hz:device:tz:user_id:g:activity_id:service:thing:time
-				key := "hz:0:0:" + struid + ":0:0:0:" + metric + ":" + request.TimeBucket
-				item := []interface{}{}
-
-				qmin, _ := strconv.Atoi(request.QueryMin())
-				qmax, _ := strconv.Atoi(request.QueryMax())
-				item = append(item, key, qmin, qmax)
-				var b []byte = make([]byte, 0, 64)
-				var h codec.Handle = new(codec.MsgpackHandle)
-				var enc *codec.Encoder = codec.NewEncoderBytes(&b, h)
-				var err error = enc.Encode(item)
-				if err != nil {
-					panic(err)
-				}
-				cmd = append(cmd, b)
-			}
-
-			response, err := redis.Int64(psdcontext.Ctx.AgScript.Do(r, cmd...))
-			if err != nil {
-				panic(err)
-			}
-
-			entry := map[int64]int64{}
-			entry[uid] = response
-			results <- entry
-
-		}(uid)
-
+		go getMyValues(uid, &results, &requests, metric)
 	}
 
 	go func() {
