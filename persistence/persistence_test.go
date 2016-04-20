@@ -247,7 +247,14 @@ func testTimezoneQuery(t *testing.T, mm MetricRW) {
 	opts["tzs"] = []string{"3600", "3601"}
 	opts["uids"] = []string{"1", "2"}
 	res := mm.QueryBuckets("steps", "tz", opts, 1458061005, 1458061010)
-	fmt.Println(res)
+	if res.XToSum["3600"] != 123 {
+		t.Logf("Incorrect Sum.  Expected 123, Received %d", res.XToSum["3600"])
+		t.Fail()
+	}
+	if res.XToSum["3601"] != 124 {
+		t.Logf("Incorrect Sum.  Expected 124, Received %d", res.XToSum["3601"])
+		t.Fail()
+	}
 }
 
 func testValidRead(t *testing.T, mm MetricRW) {

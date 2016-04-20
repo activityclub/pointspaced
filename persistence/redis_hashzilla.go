@@ -143,6 +143,9 @@ func (self RedisHZ) QueryBuckets(thing, group string, opts map[string][]string, 
 		}
 	}
 
+	qr.XToSum["3600"] = 256
+	qr.XToSum["3601"] = 254
+
 	wg.Wait()
 	return qr
 }
