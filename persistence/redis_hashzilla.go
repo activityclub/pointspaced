@@ -47,10 +47,6 @@ func NewRedisHZRequest(bucket string, scoremin int, scoremax int) RedisHZRequest
 	return r
 }
 
-func getMyValues(uid int64, requests *map[string]RedisHZRequest, metric string, wg *sync.WaitGroup) {
-	wg.Done()
-}
-
 func oldGetMyValues(uid int64, results *chan map[int64]int64, requests *map[string]RedisHZRequest, metric string) {
 	r := psdcontext.Ctx.RedisPool.Get()
 	defer r.Close()
@@ -89,7 +85,24 @@ func oldGetMyValues(uid int64, results *chan map[int64]int64, requests *map[stri
 	*results <- entry
 }
 
-func (self RedisHZ) QueryBuckets(thing, group string, opts map[string][]int64, start_ts int64, end_ts int64) QueryResponse {
+func getMyValues(flavor, kid string, requests *map[string]RedisHZRequest, thing string, wg *sync.WaitGroup) {
+	r := psdcontext.Ctx.RedisPool.Get()
+	defer r.Close()
+
+	for _, request := range *requests {
+		// hz:device:tz:user_id:g:activity_id:service:thing:time
+		key := ""
+		if flavor == "tzs" {
+			key = fmt.Sprintf("hz:0:%s:0:0:0:0:%s:%s", kid, thing, request.TimeBucket)
+		} else if flavor == "uids" {
+			key = fmt.Sprintf("hz:0:0:%s:0:0:0:%s:%s", kid, thing, request.TimeBucket)
+		}
+		fmt.Println(key)
+	}
+	wg.Done()
+}
+
+func (self RedisHZ) QueryBuckets(thing, group string, opts map[string][]string, start_ts int64, end_ts int64) QueryResponse {
 	requests := self.requestsForRange(start_ts, end_ts)
 	fmt.Println(requests)
 	qr := QueryResponse{}
@@ -103,10 +116,9 @@ func (self RedisHZ) QueryBuckets(thing, group string, opts map[string][]int64, s
 	var wg sync.WaitGroup
 	wg.Add(total)
 
-	for k, v := range opts {
-		fmt.Println(k)
-		for _, id := range v {
-			go getMyValues(id, &requests, thing, &wg)
+	for flavor, v := range opts {
+		for _, kid := range v {
+			go getMyValues(flavor, kid, &requests, thing, &wg)
 		}
 	}
 
