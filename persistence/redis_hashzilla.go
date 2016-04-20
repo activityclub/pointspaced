@@ -176,6 +176,12 @@ func (self RedisHZ) QueryBuckets(thing, group string, opts map[string][]string, 
 		index = 2
 	} else if group == "uids" {
 		index = 3
+	} else if group == "gids" {
+		index = 4
+	} else if group == "aids" {
+		index = 5
+	} else if group == "sids" {
+		index = 6
 	}
 	go func() {
 		for entry := range results {
