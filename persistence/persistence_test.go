@@ -210,12 +210,42 @@ func testMetricRWInterface(t *testing.T, mm MetricRW) {
 	testEvenLongerMultiDayValidRead(t, mm)
 	testReallyLongValidRead(t, mm)
 	testMultiUserLongRead(t, mm)
+	testTimezoneQuery(t, mm)
 }
 
 func clearRedisCompletely() {
 	r := psdcontext.Ctx.RedisPool.Get()
 	r.Do("flushall")
 	r.Close()
+}
+
+func writeSpecificThings(offset int) {
+	opts := make(map[string]string)
+	opts["thing"] = "steps"
+	opts["tz"] = 3600 + offset
+	opts["uid"] = 1 + offset
+	opts["aid"] = 3
+	opts["value"] = 123 + offset
+	opts["ts"] = 1458061005 + offset
+	opts["sid"] = 1
+	opts["did"] = 1
+	opts["gid"] = 1
+
+	err := mm.WritePoint(opts)
+	if err != nil {
+		t.Fail()
+	}
+}
+
+func testTimezoneQuery(t *testing.T, mm MetricRW) {
+	clearRedisCompletely()
+
+	writeSpecificThings(0)
+	writeSpecificThings(1)
+
+	opts := make(map[string][]int64)
+	res := mm.QueryBuckets("steps", opts, 1458061005, 1458061010)
+	fmt.Println(res)
 }
 
 func testValidRead(t *testing.T, mm MetricRW) {
