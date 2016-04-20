@@ -219,17 +219,17 @@ func clearRedisCompletely() {
 	r.Close()
 }
 
-func writeSpecificThings(offset int) {
+func writeSpecificThings(offset int, t *testing.T, mm MetricRW) {
 	opts := make(map[string]string)
 	opts["thing"] = "steps"
-	opts["tz"] = 3600 + offset
-	opts["uid"] = 1 + offset
-	opts["aid"] = 3
-	opts["value"] = 123 + offset
-	opts["ts"] = 1458061005 + offset
-	opts["sid"] = 1
-	opts["did"] = 1
-	opts["gid"] = 1
+	opts["tz"] = fmt.Sprintf("%d", 3600+offset)
+	opts["uid"] = fmt.Sprintf("%d", 1+offset)
+	opts["aid"] = "3"
+	opts["value"] = fmt.Sprintf("%d", 123+offset)
+	opts["ts"] = fmt.Sprintf("%d", 1458061005+offset)
+	opts["sid"] = "1"
+	opts["did"] = "1"
+	opts["gid"] = "1"
 
 	err := mm.WritePoint(opts)
 	if err != nil {
@@ -240,8 +240,8 @@ func writeSpecificThings(offset int) {
 func testTimezoneQuery(t *testing.T, mm MetricRW) {
 	clearRedisCompletely()
 
-	writeSpecificThings(0)
-	writeSpecificThings(1)
+	writeSpecificThings(0, t, mm)
+	writeSpecificThings(1, t, mm)
 
 	opts := make(map[string][]int64)
 	opts["tzs"] = []int64{3600, 3601}

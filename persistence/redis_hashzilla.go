@@ -87,10 +87,10 @@ func getMyValues(uid int64, results *chan map[int64]int64, requests *map[string]
 
 func (self RedisHZ) QueryBuckets(thing, group string, opts map[string][]int64, start_ts int64, end_ts int64) QueryResponse {
 	requests := self.requestsForRange(start_ts, end_ts)
+	fmt.Println(requests)
 	qr := QueryResponse{}
 	qr.XToSum = make(map[string]int64)
-	opts["uids"]
-	opts["tzs"]
+	return qr
 }
 
 func (self RedisHZ) ReadBuckets(uids []int64, metric string, aTypes []int64, start_ts int64, end_ts int64) QueryResponse {
