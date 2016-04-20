@@ -104,6 +104,8 @@ func getMyValues(flavor, kid string, results *chan map[string]int64, requests *m
 				key := ""
 				if flavor == "tzs" && optsKey == "uids" {
 					key = fmt.Sprintf("hz:0:%s:%s:0:0:0:%s:%s", kid, optsValue, thing, request.TimeBucket)
+				} else if flavor == "uids" && optsKey == "tzs" {
+					key = fmt.Sprintf("hz:0:%s:%s:0:0:0:%s:%s", optsValue, kid, thing, request.TimeBucket)
 				}
 				item := []interface{}{}
 
@@ -140,12 +142,10 @@ func (self RedisHZ) QueryBuckets(thing, group string, opts map[string][]string, 
 
 	var wg sync.WaitGroup
 
-	if group == "tz" {
-		list := opts["tzs"]
-		wg.Add(len(list))
-		for _, kid := range list {
-			go getMyValues("tzs", kid, &results, &requests, thing, opts)
-		}
+	list := opts[group]
+	wg.Add(len(list))
+	for _, kid := range list {
+		go getMyValues(group, kid, &results, &requests, thing, opts)
 	}
 
 	go func() {

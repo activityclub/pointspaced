@@ -211,6 +211,7 @@ func testMetricRWInterface(t *testing.T, mm MetricRW) {
 	//testReallyLongValidRead(t, mm)
 	//testMultiUserLongRead(t, mm)
 	testTimezoneQuery(t, mm)
+	testUserQuery(t, mm)
 }
 
 func clearRedisCompletely() {
@@ -246,13 +247,33 @@ func testTimezoneQuery(t *testing.T, mm MetricRW) {
 	opts := make(map[string][]string)
 	opts["tzs"] = []string{"3600", "3601"}
 	opts["uids"] = []string{"1", "2"}
-	res := mm.QueryBuckets("steps", "tz", opts, 1458061005, 1458061010)
+	res := mm.QueryBuckets("steps", "tzs", opts, 1458061005, 1458061010)
 	if res.XToSum["3600"] != 123 {
 		t.Logf("Incorrect Sum.  Expected 123, Received %d", res.XToSum["3600"])
 		t.Fail()
 	}
 	if res.XToSum["3601"] != 124 {
 		t.Logf("Incorrect Sum.  Expected 124, Received %d", res.XToSum["3601"])
+		t.Fail()
+	}
+}
+
+func testUserQuery(t *testing.T, mm MetricRW) {
+	clearRedisCompletely()
+
+	writeSpecificThings(0, t, mm)
+	writeSpecificThings(1, t, mm)
+
+	opts := make(map[string][]string)
+	opts["tzs"] = []string{"3600", "3601"}
+	opts["uids"] = []string{"1", "2"}
+	res := mm.QueryBuckets("steps", "uids", opts, 1458061005, 1458061010)
+	if res.XToSum["1"] != 123 {
+		t.Logf("Incorrect Sum.  Expected 123, Received %d", res.XToSum["1"])
+		t.Fail()
+	}
+	if res.XToSum["2"] != 124 {
+		t.Logf("Incorrect Sum.  Expected 124, Received %d", res.XToSum["2"])
 		t.Fail()
 	}
 }
