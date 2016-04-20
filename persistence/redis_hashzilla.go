@@ -8,6 +8,7 @@ import "pointspaced/psdcontext"
 import "github.com/garyburd/redigo/redis"
 import "github.com/ugorji/go/codec"
 import "fmt"
+import "strings"
 
 type RedisHZ struct {
 }
@@ -85,50 +86,37 @@ func oldGetMyValues(uid int64, results *chan map[int64]int64, requests *map[stri
 	*results <- entry
 }
 
-func getMyValues(flavor, kid string, results *chan map[string]int64, requests *map[string]RedisHZRequest, thing string, opts map[string][]string) {
+func getMyValues(key string, results *chan map[string]int64, requests *map[string]RedisHZRequest) {
 	r := psdcontext.Ctx.RedisPool.Get()
 	defer r.Close()
 	cmd := []interface{}{}
 	cmd = append(cmd, 0)
 
 	entry := map[string]int64{}
-	entry[kid] = 0
 
-	for optsKey, optsValues := range opts {
-		if optsKey == flavor {
-			continue
-		}
-		for _, optsValue := range optsValues {
-			for _, request := range *requests {
-				// hz:device:tz:user_id:g:activity_id:service:thing:time
-				key := ""
-				if flavor == "tzs" && optsKey == "uids" {
-					key = fmt.Sprintf("hz:0:%s:%s:0:0:0:%s:%s", kid, optsValue, thing, request.TimeBucket)
-				} else if flavor == "uids" && optsKey == "tzs" {
-					key = fmt.Sprintf("hz:0:%s:%s:0:0:0:%s:%s", optsValue, kid, thing, request.TimeBucket)
-				}
-				item := []interface{}{}
+	for _, request := range *requests {
+		// hz:device:tz:user_id:g:activity_id:service:thing:time
+		fullKey := fmt.Sprintf("%s:%s", key, request.TimeBucket)
+		item := []interface{}{}
 
-				qmin, _ := strconv.Atoi(request.QueryMin())
-				qmax, _ := strconv.Atoi(request.QueryMax())
-				item = append(item, key, qmin, qmax)
-				var b []byte = make([]byte, 0, 64)
-				var h codec.Handle = new(codec.MsgpackHandle)
-				var enc *codec.Encoder = codec.NewEncoderBytes(&b, h)
-				var err error = enc.Encode(item)
-				if err != nil {
-					panic(err)
-				}
-				cmd = append(cmd, b)
-			}
-		}
-
-		response, err := redis.Int64(psdcontext.Ctx.AgScript.Do(r, cmd...))
+		qmin, _ := strconv.Atoi(request.QueryMin())
+		qmax, _ := strconv.Atoi(request.QueryMax())
+		item = append(item, fullKey, qmin, qmax)
+		var b []byte = make([]byte, 0, 64)
+		var h codec.Handle = new(codec.MsgpackHandle)
+		var enc *codec.Encoder = codec.NewEncoderBytes(&b, h)
+		var err error = enc.Encode(item)
 		if err != nil {
 			panic(err)
 		}
-		entry[kid] += response
+		cmd = append(cmd, b)
 	}
+
+	response, err := redis.Int64(psdcontext.Ctx.AgScript.Do(r, cmd...))
+	if err != nil {
+		panic(err)
+	}
+	entry[key] = response
 
 	*results <- entry
 }
@@ -142,16 +130,59 @@ func (self RedisHZ) QueryBuckets(thing, group string, opts map[string][]string, 
 
 	var wg sync.WaitGroup
 
-	list := opts[group]
-	wg.Add(len(list))
-	for _, kid := range list {
-		go getMyValues(group, kid, &results, &requests, thing, opts)
+	dids := []string{"0"}
+	if len(opts["dids"]) > 0 {
+		dids = opts["dids"]
+	}
+	tzs := []string{"0"}
+	if len(opts["tzs"]) > 0 {
+		tzs = opts["tzs"]
+	}
+	uids := []string{"0"}
+	if len(opts["uids"]) > 0 {
+		uids = opts["uids"]
+	}
+	gids := []string{"0"}
+	if len(opts["gids"]) > 0 {
+		gids = opts["gids"]
+	}
+	aids := []string{"0"}
+	if len(opts["aids"]) > 0 {
+		aids = opts["aids"]
+	}
+	sids := []string{"0"}
+	if len(opts["sids"]) > 0 {
+		sids = opts["sids"]
 	}
 
+	for _, did := range dids {
+		for _, tz := range tzs {
+			for _, uid := range uids {
+				for _, gid := range gids {
+					for _, aid := range aids {
+						for _, sid := range sids {
+							key := fmt.Sprintf("hz:%s:%s:%s:%s:%s:%s:%s", did, tz, uid, gid, aid, sid, thing)
+							wg.Add(1)
+							go getMyValues(key, &results, &requests)
+						}
+					}
+				}
+			}
+		}
+	}
+
+	index := 1
+	if group == "tzs" {
+		index = 2
+	} else if group == "uids" {
+		index = 3
+	}
 	go func() {
 		for entry := range results {
 			for k, v := range entry {
-				qr.XToSum[k] = v
+				// hz:0:3600:2:0:0:0:steps
+				tokens := strings.Split(k, ":")
+				qr.XToSum[tokens[index]] += v
 			}
 			wg.Done()
 		}

@@ -247,6 +247,7 @@ func testTimezoneQuery(t *testing.T, mm MetricRW) {
 	opts := make(map[string][]string)
 	opts["tzs"] = []string{"3600", "3601"}
 	opts["uids"] = []string{"1", "2"}
+	opts["dids"] = []string{"1"}
 	res := mm.QueryBuckets("steps", "tzs", opts, 1458061005, 1458061010)
 	if res.XToSum["3600"] != 123 {
 		t.Logf("Incorrect Sum.  Expected 123, Received %d", res.XToSum["3600"])
