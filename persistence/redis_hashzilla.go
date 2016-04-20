@@ -85,7 +85,7 @@ func oldGetMyValues(uid int64, results *chan map[int64]int64, requests *map[stri
 	*results <- entry
 }
 
-func getMyValues(flavor, kid string, requests *map[string]RedisHZRequest, thing string, wg *sync.WaitGroup) {
+func getMyValues(flavor, kid string, results *chan map[string]int64, requests *map[string]RedisHZRequest, thing string, opts map[string][]string) {
 	r := psdcontext.Ctx.RedisPool.Get()
 	defer r.Close()
 	cmd := []interface{}{}
@@ -120,33 +120,41 @@ func getMyValues(flavor, kid string, requests *map[string]RedisHZRequest, thing 
 	}
 	fmt.Println(response)
 
-	wg.Done()
+	entry := map[string]int64{}
+	entry[kid] = response
+	*results <- entry
 }
 
 func (self RedisHZ) QueryBuckets(thing, group string, opts map[string][]string, start_ts int64, end_ts int64) QueryResponse {
 	requests := self.requestsForRange(start_ts, end_ts)
-	fmt.Println(requests)
 	qr := QueryResponse{}
 	qr.XToSum = make(map[string]int64)
 
-	total := 0
-	for _, v := range opts {
-		total += len(v)
-	}
+	results := make(chan map[string]int64)
 
 	var wg sync.WaitGroup
-	wg.Add(total)
 
-	for flavor, v := range opts {
-		for _, kid := range v {
-			go getMyValues(flavor, kid, &requests, thing, &wg)
+	if group == "tz" {
+		list := opts["tzs"]
+		wg.Add(len(list))
+		for _, kid := range list {
+			go getMyValues("tzs", kid, &results, &requests, thing, opts)
 		}
 	}
 
-	qr.XToSum["3600"] = 256
-	qr.XToSum["3601"] = 254
+	go func() {
+		for entry := range results {
+			for k, v := range entry {
+				qr.XToSum[k] = v
+			}
+			wg.Done()
+		}
+	}()
 
 	wg.Wait()
+
+	qr.XToSum["3600"] = 256
+	qr.XToSum["3601"] = 254
 	return qr
 }
 
