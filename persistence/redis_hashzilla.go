@@ -91,37 +91,43 @@ func getMyValues(flavor, kid string, results *chan map[string]int64, requests *m
 	cmd := []interface{}{}
 	cmd = append(cmd, 0)
 
-	for _, request := range *requests {
-		// hz:device:tz:user_id:g:activity_id:service:thing:time
-		key := ""
-		if flavor == "tzs" {
-			key = fmt.Sprintf("hz:0:%s:0:0:0:0:%s:%s", kid, thing, request.TimeBucket)
-		} else if flavor == "uids" {
-			key = fmt.Sprintf("hz:0:0:%s:0:0:0:%s:%s", kid, thing, request.TimeBucket)
-		}
-		item := []interface{}{}
+	entry := map[string]int64{}
+	entry[kid] = 0
 
-		qmin, _ := strconv.Atoi(request.QueryMin())
-		qmax, _ := strconv.Atoi(request.QueryMax())
-		item = append(item, key, qmin, qmax)
-		var b []byte = make([]byte, 0, 64)
-		var h codec.Handle = new(codec.MsgpackHandle)
-		var enc *codec.Encoder = codec.NewEncoderBytes(&b, h)
-		var err error = enc.Encode(item)
+	for optsKey, optsValues := range opts {
+		if optsKey == flavor {
+			continue
+		}
+		for _, optsValue := range optsValues {
+			for _, request := range *requests {
+				// hz:device:tz:user_id:g:activity_id:service:thing:time
+				key := ""
+				if flavor == "tzs" && optsKey == "uids" {
+					key = fmt.Sprintf("hz:0:%s:%s:0:0:0:%s:%s", kid, optsValue, thing, request.TimeBucket)
+				}
+				item := []interface{}{}
+
+				qmin, _ := strconv.Atoi(request.QueryMin())
+				qmax, _ := strconv.Atoi(request.QueryMax())
+				item = append(item, key, qmin, qmax)
+				var b []byte = make([]byte, 0, 64)
+				var h codec.Handle = new(codec.MsgpackHandle)
+				var enc *codec.Encoder = codec.NewEncoderBytes(&b, h)
+				var err error = enc.Encode(item)
+				if err != nil {
+					panic(err)
+				}
+				cmd = append(cmd, b)
+			}
+		}
+
+		response, err := redis.Int64(psdcontext.Ctx.AgScript.Do(r, cmd...))
 		if err != nil {
 			panic(err)
 		}
-		cmd = append(cmd, b)
+		entry[kid] += response
 	}
 
-	response, err := redis.Int64(psdcontext.Ctx.AgScript.Do(r, cmd...))
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println(response)
-
-	entry := map[string]int64{}
-	entry[kid] = response
 	*results <- entry
 }
 
@@ -153,8 +159,6 @@ func (self RedisHZ) QueryBuckets(thing, group string, opts map[string][]string, 
 
 	wg.Wait()
 
-	qr.XToSum["3600"] = 256
-	qr.XToSum["3601"] = 254
 	return qr
 }
 
