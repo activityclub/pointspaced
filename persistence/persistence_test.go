@@ -244,7 +244,9 @@ func testTimezoneQuery(t *testing.T, mm MetricRW) {
 	writeSpecificThings(1)
 
 	opts := make(map[string][]int64)
-	res := mm.QueryBuckets("steps", opts, 1458061005, 1458061010)
+	opts["tzs"] = []int64{3600, 3601}
+	opts["uids"] = []int64{1, 2}
+	res := mm.QueryBuckets("steps", "tz", opts, 1458061005, 1458061010)
 	fmt.Println(res)
 }
 
