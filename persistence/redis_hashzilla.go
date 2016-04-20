@@ -88,6 +88,8 @@ func oldGetMyValues(uid int64, results *chan map[int64]int64, requests *map[stri
 func getMyValues(flavor, kid string, requests *map[string]RedisHZRequest, thing string, wg *sync.WaitGroup) {
 	r := psdcontext.Ctx.RedisPool.Get()
 	defer r.Close()
+	cmd := []interface{}{}
+	cmd = append(cmd, 0)
 
 	for _, request := range *requests {
 		// hz:device:tz:user_id:g:activity_id:service:thing:time
@@ -97,8 +99,27 @@ func getMyValues(flavor, kid string, requests *map[string]RedisHZRequest, thing 
 		} else if flavor == "uids" {
 			key = fmt.Sprintf("hz:0:0:%s:0:0:0:%s:%s", kid, thing, request.TimeBucket)
 		}
-		fmt.Println(key)
+		item := []interface{}{}
+
+		qmin, _ := strconv.Atoi(request.QueryMin())
+		qmax, _ := strconv.Atoi(request.QueryMax())
+		item = append(item, key, qmin, qmax)
+		var b []byte = make([]byte, 0, 64)
+		var h codec.Handle = new(codec.MsgpackHandle)
+		var enc *codec.Encoder = codec.NewEncoderBytes(&b, h)
+		var err error = enc.Encode(item)
+		if err != nil {
+			panic(err)
+		}
+		cmd = append(cmd, b)
 	}
+
+	response, err := redis.Int64(psdcontext.Ctx.AgScript.Do(r, cmd...))
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(response)
+
 	wg.Done()
 }
 
