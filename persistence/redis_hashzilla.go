@@ -47,7 +47,11 @@ func NewRedisHZRequest(bucket string, scoremin int, scoremax int) RedisHZRequest
 	return r
 }
 
-func getMyValues(uid int64, results *chan map[int64]int64, requests *map[string]RedisHZRequest, metric string) {
+func getMyValues(uid int64, requests *map[string]RedisHZRequest, metric string, wg *sync.WaitGroup) {
+	wg.Done()
+}
+
+func oldGetMyValues(uid int64, results *chan map[int64]int64, requests *map[string]RedisHZRequest, metric string) {
 	r := psdcontext.Ctx.RedisPool.Get()
 	defer r.Close()
 
@@ -90,6 +94,23 @@ func (self RedisHZ) QueryBuckets(thing, group string, opts map[string][]int64, s
 	fmt.Println(requests)
 	qr := QueryResponse{}
 	qr.XToSum = make(map[string]int64)
+
+	total := 0
+	for _, v := range opts {
+		total += len(v)
+	}
+
+	var wg sync.WaitGroup
+	wg.Add(total)
+
+	for k, v := range opts {
+		fmt.Println(k)
+		for _, id := range v {
+			go getMyValues(id, &requests, thing, &wg)
+		}
+	}
+
+	wg.Wait()
 	return qr
 }
 
@@ -108,7 +129,7 @@ func (self RedisHZ) ReadBuckets(uids []int64, metric string, aTypes []int64, sta
 	results := make(chan map[int64]int64)
 
 	for _, uid := range uids {
-		go getMyValues(uid, &results, &requests, metric)
+		go oldGetMyValues(uid, &results, &requests, metric)
 	}
 
 	go func() {
