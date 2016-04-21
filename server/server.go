@@ -8,7 +8,7 @@ import "pointspaced/router"
 import "github.com/garyburd/redigo/redis"
 
 func Run() {
-	psdcontext.Ctx.RedisPool = persistence.NewRedisPool(":6379")
+	psdcontext.Ctx.RedisPool = persistence.NewRedisPool(psdcontext.Ctx.Config.RedisConfig.Dsn)
 	fmt.Println("-> PSD, starting http server on port: ", psdcontext.Ctx.Config.HttpConfig.Bind)
 
 	rx := psdcontext.Ctx.RedisPool.Get()

@@ -481,7 +481,7 @@ func (self RedisHZ) WritePoint(opts map[string]string) error {
 									// TODO LOCKING
 									r.Send("MULTI")
 									r.Send("HINCRBY", key, set_timestamp, value)
-									r.Send("EXPIRE", key, psdcontext.Ctx.Config.Redis.Expire)
+									r.Send("EXPIRE", key, psdcontext.Ctx.Config.RedisConfig.Expire)
 									_, err := r.Do("EXEC")
 									if err != nil {
 										return err

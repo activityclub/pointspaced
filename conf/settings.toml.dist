@@ -15,3 +15,4 @@ nsqlookupds = ["localhost:4161"]
 [Redis]
 
 expire = 7776000  #90 days
+dsn="127.0.0.1:6379"

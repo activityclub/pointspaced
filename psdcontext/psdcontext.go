@@ -15,12 +15,13 @@ type NSQConfig struct {
 
 type RedisConfig struct {
 	Expire int64
+	Dsn    string
 }
 
 type Config struct {
-	NSQConfig  NSQConfig
-	HttpConfig HttpConfig
-	Redis      RedisConfig
+	NSQConfig   NSQConfig
+	HttpConfig  HttpConfig
+	RedisConfig RedisConfig
 }
 
 type Context struct {
