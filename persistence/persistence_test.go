@@ -205,11 +205,11 @@ func BenchmarkHZ_ManyMultiUserRead(b *testing.B) {
 }
 
 func testMetricRWInterface(t *testing.T, mm MetricRW) {
-	//testValidRead(t, mm)
-	//testMultiDayValidRead(t, mm)
-	//testEvenLongerMultiDayValidRead(t, mm)
-	//testReallyLongValidRead(t, mm)
-	//testMultiUserLongRead(t, mm)
+	testValidRead(t, mm)
+	testMultiDayValidRead(t, mm)
+	testEvenLongerMultiDayValidRead(t, mm)
+	testReallyLongValidRead(t, mm)
+	testMultiUserLongRead(t, mm)
 	testTimezoneQuery(t, mm)
 	testUserQuery(t, mm)
 }

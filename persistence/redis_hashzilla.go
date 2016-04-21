@@ -121,9 +121,9 @@ func getMyValues(key string, results *chan map[string]int64, requests *map[strin
 	*results <- entry
 }
 
-func (self RedisHZ) QueryBuckets(thing, group string, opts map[string][]string, start_ts int64, end_ts int64) QueryResponse {
+func (self RedisHZ) QueryBuckets(thing, group string, opts map[string][]string, start_ts int64, end_ts int64) XQueryResponse {
 	requests := self.requestsForRange(start_ts, end_ts)
-	qr := QueryResponse{}
+	qr := XQueryResponse{}
 	qr.XToSum = make(map[string]int64)
 
 	results := make(chan map[string]int64)
