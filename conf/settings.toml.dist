@@ -12,7 +12,7 @@ bind="127.0.0.1:1155"
 nsqlookupds = ["localhost:4161"]
 
 
-[Redis]
+[RedisConfig]
 
 expire = 7776000  #90 days
 dsn="127.0.0.1:6379"
