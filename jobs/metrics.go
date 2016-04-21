@@ -29,7 +29,7 @@ func ProcessMetricJob(metric MetricJob) {
 	if metric.Uid > 0 {
 		opts["uid"] = fmt.Sprintf("%d", metric.Uid)
 	}
-	if metric.AID > 0 {
+	if metric.Aid > 0 {
 		opts["aid"] = fmt.Sprintf("%d", metric.Aid)
 	}
 
