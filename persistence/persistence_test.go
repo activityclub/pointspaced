@@ -212,6 +212,7 @@ func testMetricRWInterface(t *testing.T, mm MetricRW) {
 	testMultiUserLongRead(t, mm)
 	testTimezoneQuery(t, mm)
 	testUserQuery(t, mm)
+	testNegativeQuery(t, mm)
 }
 
 func clearRedisCompletely() {
@@ -249,6 +250,7 @@ func testTimezoneQuery(t *testing.T, mm MetricRW) {
 	opts["uids"] = []string{"1", "2"}
 	opts["dids"] = []string{"1"}
 	res := mm.QueryBuckets("steps", "tzs", opts, 1458061005, 1458061010)
+
 	if res.XToSum["3600"] != 123 {
 		t.Logf("Incorrect Sum.  Expected 123, Received %d", res.XToSum["3600"])
 		t.Fail()
@@ -275,6 +277,59 @@ func testUserQuery(t *testing.T, mm MetricRW) {
 	}
 	if res.XToSum["2"] != 124 {
 		t.Logf("Incorrect Sum.  Expected 124, Received %d", res.XToSum["2"])
+		t.Fail()
+	}
+}
+
+func testNegativeQuery(t *testing.T, mm MetricRW) {
+	clearRedisCompletely()
+
+	opts := make(map[string]string)
+	opts["thing"] = "steps"
+	opts["uid"] = "1"
+	opts["aid"] = "3"
+	opts["value"] = "100"
+	opts["ts"] = "1458061005"
+	opts["tz"] = "-28800"
+	opts["sid"] = "1"
+	opts["did"] = "1"
+	opts["gid"] = "1"
+	err := mm.WritePoint(opts)
+	if err != nil {
+		t.Fail()
+	}
+
+	opts = make(map[string]string)
+	opts["thing"] = "steps"
+	opts["uid"] = "1"
+	opts["aid"] = "3"
+	opts["value"] = "-20"
+	opts["ts"] = "1458061007"
+	err = mm.WritePoint(opts)
+	if err != nil {
+		t.Fail()
+	}
+
+	opts = make(map[string]string)
+	opts["thing"] = "steps"
+	opts["uid"] = "2"
+	opts["gid"] = "2"
+	opts["value"] = "-100"
+	opts["ts"] = "1458061005"
+	err = mm.WritePoint(opts)
+	if err != nil {
+		t.Fail()
+	}
+
+	qopts := make(map[string][]string)
+	qopts["uids"] = []string{"1", "2"}
+	res := mm.QueryBuckets("steps", "uids", qopts, 1458061005, 1458061010)
+	if res.XToSum["1"] != 80 {
+		t.Logf("Incorrect Sum.  Expected 80, Received %d", res.XToSum["1"])
+		t.Fail()
+	}
+	if res.XToSum["2"] != -100 {
+		t.Logf("Incorrect Sum.  Expected -100, Received %d", res.XToSum["2"])
 		t.Fail()
 	}
 }
@@ -415,13 +470,18 @@ func testMultiUserLongRead(t *testing.T, mm MetricRW) {
 		if err != nil {
 			t.Fail()
 		}
+
+		err = mm.OldWritePoint("points", uid, -56, 3, 1458061011)
+		if err != nil {
+			t.Fail()
+		}
 	}
 
 	res := mm.ReadBuckets([]int64{1, 2, 3, 327}, "points", []int64{3}, 1451635200, 1458061011)
 	for _, uid := range []int64{1, 2, 3, 327} {
 		s := fmt.Sprintf("%d", uid)
-		if res.UserToSum[s] != 4014 {
-			t.Errorf("Incorrect Sum For Uid %d.  Expected 4014, Received %d", uid, res.UserToSum[s])
+		if res.UserToSum[s] != 3958 {
+			t.Errorf("Incorrect Sum For Uid %d.  Expected 3958, Received %d", uid, res.UserToSum[s])
 		}
 	}
 	for _, uid := range []int64{1, 2, 3, 327} {
