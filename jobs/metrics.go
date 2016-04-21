@@ -26,13 +26,27 @@ func ProcessMetricJob(metric MetricJob) {
 	opts := make(map[string]string)
 	opts["thing"] = metric.Thing
 	opts["tz"] = metric.Tz
-	opts["uid"] = fmt.Sprintf("%d", metric.Uid)
-	opts["aid"] = fmt.Sprintf("%d", metric.Aid)
+	if metric.Uid > 0 {
+		opts["uid"] = fmt.Sprintf("%d", metric.Uid)
+	}
+	if metric.AID > 0 {
+		opts["aid"] = fmt.Sprintf("%d", metric.Aid)
+	}
+
 	opts["value"] = fmt.Sprintf("%d", metric.Value)
-	opts["ts"] = fmt.Sprintf("%d", metric.Ts)
-	opts["sid"] = fmt.Sprintf("%d", metric.Sid)
-	opts["did"] = fmt.Sprintf("%d", metric.Did)
-	opts["gid"] = fmt.Sprintf("%d", metric.Gid)
+
+	if metric.Ts > 0 {
+		opts["ts"] = fmt.Sprintf("%d", metric.Ts)
+	}
+	if metric.Sid > 0 {
+		opts["sid"] = fmt.Sprintf("%d", metric.Sid)
+	}
+	if metric.Did > 0 {
+		opts["did"] = fmt.Sprintf("%d", metric.Did)
+	}
+	if metric.Gid > 0 {
+		opts["gid"] = fmt.Sprintf("%d", metric.Gid)
+	}
 
 	err := curManager.WritePoint(opts)
 	if err != nil {
