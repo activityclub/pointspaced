@@ -9,12 +9,6 @@ func Query(c *gin.Context) {
 
 	// r.GET("/v1/query/:dids/:tzs/:uids/:gids/:aids/:sids/:thing/:start_ts/:end_ts", v1.Query)
 
-	group := c.Query("group")
-	if group == "" {
-		c.JSON(406, "group by what?")
-		return
-	}
-
 	mm := persistence.NewMetricManagerHZ()
 	opts := make(map[string][]string)
 	opts["dids"] = strings.Split(c.Param("dids"), ",")
@@ -31,7 +25,7 @@ func Query(c *gin.Context) {
 	start_ts_int, _ := strconv.ParseInt(start_ts, 10, 64)
 	end_ts_int, _ := strconv.ParseInt(end_ts, 10, 64)
 
-	qr := mm.QueryBuckets(thing, group, opts, start_ts_int, end_ts_int)
+	qr := mm.QueryBuckets(thing, c.Query("group"), opts, start_ts_int, end_ts_int)
 
 	c.JSON(200, qr)
 }

@@ -187,8 +187,12 @@ func (self RedisHZ) QueryBuckets(thing, group string, opts map[string][]string, 
 		for entry := range results {
 			for k, v := range entry {
 				// hz:0:3600:2:0:0:0:steps
-				tokens := strings.Split(k, ":")
-				qr.XToSum[tokens[index]] += v
+				if group == "" {
+					qr.XToSum["0"] += v
+				} else {
+					tokens := strings.Split(k, ":")
+					qr.XToSum[tokens[index]] += v
+				}
 			}
 			wg.Done()
 		}
