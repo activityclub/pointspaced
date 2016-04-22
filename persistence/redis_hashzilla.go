@@ -8,7 +8,8 @@ import "pointspaced/psdcontext"
 import "github.com/garyburd/redigo/redis"
 import "github.com/ugorji/go/codec"
 import "fmt"
-import "strings"
+
+//import "strings"
 
 type RedisHZ struct {
 }
@@ -121,86 +122,94 @@ func getMyValues(key string, results *chan map[string]int64, requests *map[strin
 	*results <- entry
 }
 
-func (self RedisHZ) QueryBuckets(thing, group string, opts map[string][]string, start_ts int64, end_ts int64) XQueryResponse {
-	requests := self.requestsForRange(start_ts, end_ts)
+func (self RedisHZ) QueryBuckets(uid, thing, aid string, start_ts int64, end_ts int64) XQueryResponse {
 	qr := XQueryResponse{}
 	qr.XToSum = make(map[string]int64)
+	return qr
+}
 
-	results := make(chan map[string]int64)
+func foo() {
+	/*
+		requests := self.requestsForRange(start_ts, end_ts)
+		qr := XQueryResponse{}
+		qr.XToSum = make(map[string]int64)
 
-	var wg sync.WaitGroup
+		results := make(chan map[string]int64)
 
-	dids := []string{"0"}
-	if len(opts["dids"]) > 0 {
-		dids = opts["dids"]
-	}
-	tzs := []string{"0"}
-	if len(opts["tzs"]) > 0 {
-		tzs = opts["tzs"]
-	}
-	uids := []string{"0"}
-	if len(opts["uids"]) > 0 {
-		uids = opts["uids"]
-	}
-	gids := []string{"0"}
-	if len(opts["gids"]) > 0 {
-		gids = opts["gids"]
-	}
-	aids := []string{"0"}
-	if len(opts["aids"]) > 0 {
-		aids = opts["aids"]
-	}
-	sids := []string{"0"}
-	if len(opts["sids"]) > 0 {
-		sids = opts["sids"]
-	}
+		var wg sync.WaitGroup
 
-	for _, did := range dids {
-		for _, tz := range tzs {
-			for _, uid := range uids {
-				for _, gid := range gids {
-					for _, aid := range aids {
-						for _, sid := range sids {
-							key := fmt.Sprintf("hz:%s:%s:%s:%s:%s:%s:%s", did, tz, uid, gid, aid, sid, thing)
-							wg.Add(1)
-							go getMyValues(key, &results, &requests)
+		dids := []string{"0"}
+		if len(opts["dids"]) > 0 {
+			dids = opts["dids"]
+		}
+		tzs := []string{"0"}
+		if len(opts["tzs"]) > 0 {
+			tzs = opts["tzs"]
+		}
+		uids := []string{"0"}
+		if len(opts["uids"]) > 0 {
+			uids = opts["uids"]
+		}
+		gids := []string{"0"}
+		if len(opts["gids"]) > 0 {
+			gids = opts["gids"]
+		}
+		aids := []string{"0"}
+		if len(opts["aids"]) > 0 {
+			aids = opts["aids"]
+		}
+		sids := []string{"0"}
+		if len(opts["sids"]) > 0 {
+			sids = opts["sids"]
+		}
+
+		for _, did := range dids {
+			for _, tz := range tzs {
+				for _, uid := range uids {
+					for _, gid := range gids {
+						for _, aid := range aids {
+							for _, sid := range sids {
+								key := fmt.Sprintf("hz:%s:%s:%s:%s:%s:%s:%s", did, tz, uid, gid, aid, sid, thing)
+								wg.Add(1)
+								go getMyValues(key, &results, &requests)
+							}
 						}
 					}
 				}
 			}
 		}
-	}
 
-	index := 1
-	if group == "tzs" {
-		index = 2
-	} else if group == "uids" {
-		index = 3
-	} else if group == "gids" {
-		index = 4
-	} else if group == "aids" {
-		index = 5
-	} else if group == "sids" {
-		index = 6
-	}
-	go func() {
-		for entry := range results {
-			for k, v := range entry {
-				// hz:0:3600:2:0:0:0:steps
-				if group == "" {
-					qr.XToSum["0"] += v
-				} else {
-					tokens := strings.Split(k, ":")
-					qr.XToSum[tokens[index]] += v
-				}
-			}
-			wg.Done()
+		index := 1
+		if group == "tzs" {
+			index = 2
+		} else if group == "uids" {
+			index = 3
+		} else if group == "gids" {
+			index = 4
+		} else if group == "aids" {
+			index = 5
+		} else if group == "sids" {
+			index = 6
 		}
-	}()
+		go func() {
+			for entry := range results {
+				for k, v := range entry {
+					// hz:0:3600:2:0:0:0:steps
+					if group == "" {
+						qr.XToSum["0"] += v
+					} else {
+						tokens := strings.Split(k, ":")
+						qr.XToSum[tokens[index]] += v
+					}
+				}
+				wg.Done()
+			}
+		}()
 
-	wg.Wait()
+		wg.Wait()
 
-	return qr
+		return qr
+	*/
 }
 
 func (self RedisHZ) ReadBuckets(uids []int64, metric string, aTypes []int64, start_ts int64, end_ts int64) QueryResponse {
