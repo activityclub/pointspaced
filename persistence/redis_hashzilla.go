@@ -123,8 +123,27 @@ func getMyValues(key string, results *chan map[string]int64, requests *map[strin
 }
 
 func (self RedisHZ) QueryBuckets(uid, thing, aid string, start_ts int64, end_ts int64) XQueryResponse {
+	requests := self.requestsForRange(start_ts, end_ts)
 	qr := XQueryResponse{}
 	qr.XToSum = make(map[string]int64)
+
+	r := psdcontext.Ctx.RedisPool.Get()
+	defer r.Close()
+
+	for _, request := range requests {
+		key := fmt.Sprintf("hz:%s:%s", "1", request.TimeBucket)
+		qmin, _ := strconv.Atoi(request.QueryMin())
+		//qmax, _ := strconv.Atoi(request.QueryMax())
+		subkey := fmt.Sprintf("%d:%s:%s", qmin, "1", aid)
+		r.Send("HGET", key, subkey)
+	}
+
+	r.Flush()
+	v, err := redis.Int64(r.Receive())
+	if err != nil {
+	}
+	fmt.Println(v)
+
 	return qr
 }
 
@@ -424,11 +443,7 @@ func (self RedisHZ) OldWritePoint(thing string, userId, value, activityId, ts in
 }
 
 func (self RedisHZ) WritePoint(opts map[string]string) error {
-	tz := opts["tz"]
 	thing := opts["thing"]
-	sid := opts["sid"]
-	did := opts["did"]
-	gid := opts["gid"]
 	uid := opts["uid"]
 	aid := opts["aid"]
 	value := opts["value"]
@@ -437,6 +452,8 @@ func (self RedisHZ) WritePoint(opts map[string]string) error {
 
 	if (value == "") ||
 		(ts == "") ||
+		(uid == "") ||
+		(aid == "") ||
 		(thing == "") {
 		return errors.New("invalid arguments")
 	}
@@ -457,53 +474,17 @@ func (self RedisHZ) WritePoint(opts map[string]string) error {
 				set_timestamp = buckets[idx+1]
 			}
 
-			// hz:device:tz:user_id:g:activity_id:service:thing:time
-			// hz:ios:la:1:m:3:fitbit:points
-			// hz:0:0:0:0:0:0:points
+			// "hz:1:2016" 201603:3:3" 123
 
-			// hz:ios:0:0:0:0:0:points
+			key := fmt.Sprintf("hz:%s:%s", uid, bucket)
 
-			for _, d := range []string{"0", did} {
-				if d == "" {
-					continue
-				}
-				for _, t := range []string{"0", tz} {
-					if t == "" {
-						continue
-					}
-					for _, u := range []string{"0", uid} {
-						if u == "" {
-							continue
-						}
-						for _, g := range []string{"0", gid} {
-							if g == "" {
-								continue
-							}
-							for _, a := range []string{"0", aid} {
-								if a == "" {
-									continue
-								}
-								for _, s := range []string{"0", sid} {
-									if s == "" {
-										continue
-									}
-
-									key := fmt.Sprintf("hz:%s:%s:%s:%s:%s:%s:%s:%s",
-										d, t, u, g, a, s, thing, bucket)
-
-									// TODO LOCKING
-									r.Send("MULTI")
-									r.Send("HINCRBY", key, set_timestamp, value)
-									r.Send("EXPIRE", key, psdcontext.Ctx.Config.RedisConfig.Expire)
-									_, err := r.Do("EXEC")
-									if err != nil {
-										return err
-									}
-								}
-							}
-						}
-					}
-				}
+			// TODO LOCKING
+			r.Send("MULTI")
+			r.Send("HINCRBY", key, fmt.Sprintf("%s:%s:%s", set_timestamp, "1", aid), value)
+			r.Send("EXPIRE", key, psdcontext.Ctx.Config.RedisConfig.Expire)
+			_, err := r.Do("EXEC")
+			if err != nil {
+				return err
 			}
 		}
 	}
