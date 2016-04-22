@@ -522,3 +522,37 @@ func (self *RedisHZ) bucketsForJob(ts int64) ([]string, error) {
 
 	return out, nil
 }
+
+func (self RedisHZ) IncrementCount(thing string, ts, value int64) error {
+
+	if ts <= 0 {
+		return errors.New("invalid timestamp")
+	}
+	if len(thing) < 2 {
+		return errors.New("all things must be 2 characters or longer")
+	}
+	if len(thing) > 64 {
+		return errors.New("all things must be 64 characters or less")
+	}
+
+	buckets, err := self.bucketsForJob(ts)
+	if err != nil {
+		return err
+	} else {
+		r := psdcontext.Ctx.RedisPool.Get()
+		defer r.Close()
+		for idx, bucket := range buckets {
+			set_timestamp := time.Unix(ts, int64(0)).UTC().Format("20060102150405")
+			if len(buckets) > idx+1 {
+				set_timestamp = buckets[idx+1]
+			}
+			key := fmt.Sprintf("c:%s:%s", thing, bucket)
+			r.Send("HINCRBY", key, set_timestamp, value)
+			r.Send("EXPIRE", key, (86400 * 30))
+			r.Flush()
+			r.Receive()
+			r.Receive()
+		}
+	}
+	return nil
+}

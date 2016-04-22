@@ -11,6 +11,7 @@ import "fmt"
 type WorkerMessage struct {
 	Command   string         `json:"command"`
 	MetricJob jobs.MetricJob `json:"metric,omitempty"`
+	CountJob  jobs.CountJob  `json:"count,omitempty"`
 }
 
 func Run() {
@@ -39,6 +40,8 @@ func Run() {
 
 		if message.Command == "metric" {
 			jobs.ProcessMetricJob(message.MetricJob)
+		} else if message.Command == "count" {
+			jobs.ProcessCountJob(message.CountJob)
 		} else {
 			log.Println("-> COMMAND UNSUPPORTED")
 		}

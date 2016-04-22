@@ -39,25 +39,26 @@ type MetricRW interface {
 	QueryBuckets(thing, group string, opts map[string][]string, start_ts int64, end_ts int64) XQueryResponse
 }
 
+type CountRW interface {
+	IncrementCount(thing string, ts, value int64) error
+}
+
 type MetricManager struct {
 	MetricRW
 }
 
-/*
-func NewMetricManagerSimple() *MetricManager {
-	mm := MetricManager{}
-	mm.MetricRW = RedisSimple{}
-	return &mm
+type CountManager struct {
+	CountRW
 }
-
-func NewMetricManagerACR() *MetricManager {
-	mm := MetricManager{}
-	mm.MetricRW = RedisACR{}
-	return &mm
-} */
 
 func NewMetricManagerHZ() *MetricManager {
 	mm := MetricManager{}
 	mm.MetricRW = RedisHZ{}
 	return &mm
+}
+
+func NewCountManagerHZ() *CountManager {
+	cm := CountManager{}
+	cm.CountRW = RedisHZ{}
+	return &cm
 }
