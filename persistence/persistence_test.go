@@ -227,25 +227,29 @@ func testSmallKeyQuery(t *testing.T, mm MetricRW) {
 	clearRedisCompletely()
 
 	opts := make(map[string]string)
-	opts["thing"] = "steps"
+	opts["thing"] = "points"
 	opts["uid"] = "1"
-	opts["aid"] = "3"
-	opts["value"] = "123"
+	opts["aid"] = "10"
+	opts["value"] = "100"
 	opts["ts"] = "1458061005"
 
 	err := mm.WritePoint(opts)
 	if err != nil {
 		t.Fail()
 	}
-	opts["value"] = "124"
+	opts["value"] = "200"
+	opts["aid"] = "11"
 	opts["ts"] = "1458061006"
 
 	err = mm.WritePoint(opts)
 	if err != nil {
 		t.Fail()
 	}
-	res := mm.QueryBuckets("1", "steps", "3", 1458061005, 1458061010)
-	fmt.Println(res)
+	sum := mm.QueryBuckets("1", "points", "all", 1458061005, 1458061010)
+	if sum != 300 {
+		t.Logf("Incorrect Sum.  Expected 300, Received %d", sum)
+		t.Fail()
+	}
 }
 
 /*
