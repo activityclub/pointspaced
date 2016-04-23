@@ -248,6 +248,11 @@ func testSmallKeyQuery(t *testing.T, mm MetricRW) {
 		t.Logf("Incorrect Sum.  Expected 300, Received %d", sum)
 		t.Fail()
 	}
+	sum = mm.QueryBuckets("1", "points", "10", 1458061005, 1458061010)
+	if sum != 100 {
+		t.Logf("Incorrect Sum.  Expected 100, Received %d", sum)
+		t.Fail()
+	}
 }
 
 /*
