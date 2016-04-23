@@ -8,8 +8,7 @@ import "pointspaced/psdcontext"
 import "github.com/garyburd/redigo/redis"
 import "github.com/ugorji/go/codec"
 import "fmt"
-
-//import "strings"
+import "strings"
 
 type RedisHZ struct {
 }
@@ -137,9 +136,18 @@ func (self RedisHZ) QueryBuckets(uid, thing, aid string, start_ts int64, end_ts 
 		r.Send("HGETALL", key)
 		r.Flush()
 		reply, _ := redis.MultiBulk(r.Receive())
-		for _, x := range reply {
-			v := x.([]byte)
-			fmt.Println(string(v))
+		for i, x := range reply {
+			if i%2 == 0 {
+				bytes := x.([]byte)
+				str := string(bytes)
+				tokens := strings.Split(str, ":")
+				fmt.Println(tokens)
+			} else {
+				bytes := x.([]byte)
+				str := string(bytes)
+				val, _ := strconv.ParseInt(str, 10, 64)
+				fmt.Println(val)
+			}
 		}
 	}
 
