@@ -125,6 +125,10 @@ func (self RedisHZ) QueryBuckets(uid, thing, aid string, start_ts int64, end_ts 
 	requests := self.requestsForRange(start_ts, end_ts)
 	sum := int64(0)
 	matchThing := thing2id(thing)
+	allAids := false
+	if aid == "all" {
+		allAids = true
+	}
 
 	r := psdcontext.Ctx.RedisPool.Get()
 	defer r.Close()
@@ -137,6 +141,7 @@ func (self RedisHZ) QueryBuckets(uid, thing, aid string, start_ts int64, end_ts 
 		r.Flush()
 		reply, _ := redis.MultiBulk(r.Receive())
 		lastThing := ""
+		lastAid := ""
 		for i, x := range reply {
 			if i%2 == 0 {
 				bytes := x.([]byte)
@@ -145,13 +150,12 @@ func (self RedisHZ) QueryBuckets(uid, thing, aid string, start_ts int64, end_ts 
 				bucket := tokens[0]
 				fmt.Println("aaa ", bucket, qmin, qmax)
 				lastThing = tokens[1]
-				aid := tokens[2]
-				fmt.Println(thing, aid)
+				lastAid = tokens[2]
 			} else {
 				bytes := x.([]byte)
 				str := string(bytes)
 				val, _ := strconv.ParseInt(str, 10, 64)
-				if matchThing == lastThing {
+				if matchThing == lastThing && (allAids || aid == lastAid) {
 					sum += val
 				}
 			}
