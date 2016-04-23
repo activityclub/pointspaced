@@ -205,12 +205,12 @@ func BenchmarkHZ_ManyMultiUserRead(b *testing.B) {
 }
 
 func testMetricRWInterface(t *testing.T, mm MetricRW) {
-	//testValidRead(t, mm)
+	testValidRead(t, mm)
 	//testMultiDayValidRead(t, mm)
 	//testEvenLongerMultiDayValidRead(t, mm)
 	//testReallyLongValidRead(t, mm)
 	//testMultiUserLongRead(t, mm)
-	testSmallKeyQuery(t, mm)
+	//testSmallKeyQuery(t, mm)
 	//testNegativeQuery(t, mm)
 }
 
@@ -263,7 +263,6 @@ func testSmallKeyQuery(t *testing.T, mm MetricRW) {
 	}
 }
 
-/*
 func testNegativeQuery(t *testing.T, mm MetricRW) {
 	clearRedisCompletely()
 
@@ -273,10 +272,6 @@ func testNegativeQuery(t *testing.T, mm MetricRW) {
 	opts["aid"] = "3"
 	opts["value"] = "100"
 	opts["ts"] = "1458061005"
-	opts["tz"] = "-28800"
-	opts["sid"] = "1"
-	opts["did"] = "1"
-	opts["gid"] = "1"
 	err := mm.WritePoint(opts)
 	if err != nil {
 		t.Fail()
@@ -296,7 +291,7 @@ func testNegativeQuery(t *testing.T, mm MetricRW) {
 	opts = make(map[string]string)
 	opts["thing"] = "steps"
 	opts["uid"] = "2"
-	opts["gid"] = "2"
+	opts["aid"] = "3"
 	opts["value"] = "-100"
 	opts["ts"] = "1458061005"
 	err = mm.WritePoint(opts)
@@ -304,19 +299,12 @@ func testNegativeQuery(t *testing.T, mm MetricRW) {
 		t.Fail()
 	}
 
-	qopts := make(map[string][]string)
-	qopts["uids"] = []string{"1", "2"}
-	res := mm.QueryBuckets("steps", "uids", qopts, 1458061005, 1458061010)
-	if res.XToSum["1"] != 80 {
-		t.Logf("Incorrect Sum.  Expected 80, Received %d", res.XToSum["1"])
-		t.Fail()
-	}
-	if res.XToSum["2"] != -100 {
-		t.Logf("Incorrect Sum.  Expected -100, Received %d", res.XToSum["2"])
+	sum := mm.QueryBuckets("1", "steps", "all", 1458061005, 1458061010)
+	if sum != 80 {
+		t.Logf("Incorrect Sum.  Expected 80, Received %d", sum)
 		t.Fail()
 	}
 }
-*/
 
 func testValidRead(t *testing.T, mm MetricRW) {
 	clearRedisCompletely()
