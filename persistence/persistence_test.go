@@ -210,8 +210,7 @@ func testMetricRWInterface(t *testing.T, mm MetricRW) {
 	testEvenLongerMultiDayValidRead(t, mm)
 	testReallyLongValidRead(t, mm)
 	testMultiUserLongRead(t, mm)
-	testTimezoneQuery(t, mm)
-	testUserQuery(t, mm)
+	testSmallKeyQuery(t, mm)
 	testNegativeQuery(t, mm)
 }
 
@@ -222,61 +221,44 @@ func clearRedisCompletely() {
 }
 
 func writeSpecificThings(offset int, t *testing.T, mm MetricRW) {
+}
+
+func testSmallKeyQuery(t *testing.T, mm MetricRW) {
+	clearRedisCompletely()
+
 	opts := make(map[string]string)
+	opts["thing"] = "points"
+	opts["uid"] = "1"
+	opts["aid"] = "10"
+	opts["value"] = "100"
+	opts["ts"] = "1458061005"
+	mm.WritePoint(opts)
+	opts["value"] = "200"
+	opts["aid"] = "11"
+	opts["ts"] = "1458061006"
+	mm.WritePoint(opts)
+	opts["value"] = "500"
+	opts["aid"] = "11"
+	opts["ts"] = "1458061011"
+	mm.WritePoint(opts)
+	opts["value"] = "500"
+	opts["aid"] = "11"
+	opts["ts"] = "1458061004"
+	mm.WritePoint(opts)
 	opts["thing"] = "steps"
-	opts["tz"] = fmt.Sprintf("%d", 3600+offset)
-	opts["uid"] = fmt.Sprintf("%d", 1+offset)
+	opts["value"] = "200"
 	opts["aid"] = "3"
-	opts["value"] = fmt.Sprintf("%d", 123+offset)
-	opts["ts"] = fmt.Sprintf("%d", 1458061005+offset)
-	opts["sid"] = "1"
-	opts["did"] = "1"
-	opts["gid"] = "1"
+	opts["ts"] = "1458061007"
+	mm.WritePoint(opts)
 
-	err := mm.WritePoint(opts)
-	if err != nil {
+	sum := mm.QueryBuckets("1", "points", "all", 1458061005, 1458061010)
+	if sum != 300 {
+		t.Logf("Incorrect Sum.  Expected 300, Received %d", sum)
 		t.Fail()
 	}
-}
-
-func testTimezoneQuery(t *testing.T, mm MetricRW) {
-	clearRedisCompletely()
-
-	writeSpecificThings(0, t, mm)
-	writeSpecificThings(1, t, mm)
-
-	opts := make(map[string][]string)
-	opts["tzs"] = []string{"3600", "3601"}
-	opts["uids"] = []string{"1", "2"}
-	opts["dids"] = []string{"1"}
-	res := mm.QueryBuckets("steps", "tzs", opts, 1458061005, 1458061010)
-
-	if res.XToSum["3600"] != 123 {
-		t.Logf("Incorrect Sum.  Expected 123, Received %d", res.XToSum["3600"])
-		t.Fail()
-	}
-	if res.XToSum["3601"] != 124 {
-		t.Logf("Incorrect Sum.  Expected 124, Received %d", res.XToSum["3601"])
-		t.Fail()
-	}
-}
-
-func testUserQuery(t *testing.T, mm MetricRW) {
-	clearRedisCompletely()
-
-	writeSpecificThings(0, t, mm)
-	writeSpecificThings(1, t, mm)
-
-	opts := make(map[string][]string)
-	opts["tzs"] = []string{"3600", "3601"}
-	opts["uids"] = []string{"1", "2"}
-	res := mm.QueryBuckets("steps", "uids", opts, 1458061005, 1458061010)
-	if res.XToSum["1"] != 123 {
-		t.Logf("Incorrect Sum.  Expected 123, Received %d", res.XToSum["1"])
-		t.Fail()
-	}
-	if res.XToSum["2"] != 124 {
-		t.Logf("Incorrect Sum.  Expected 124, Received %d", res.XToSum["2"])
+	sum = mm.QueryBuckets("1", "points", "10", 1458061005, 1458061010)
+	if sum != 100 {
+		t.Logf("Incorrect Sum.  Expected 100, Received %d", sum)
 		t.Fail()
 	}
 }
@@ -290,10 +272,6 @@ func testNegativeQuery(t *testing.T, mm MetricRW) {
 	opts["aid"] = "3"
 	opts["value"] = "100"
 	opts["ts"] = "1458061005"
-	opts["tz"] = "-28800"
-	opts["sid"] = "1"
-	opts["did"] = "1"
-	opts["gid"] = "1"
 	err := mm.WritePoint(opts)
 	if err != nil {
 		t.Fail()
@@ -313,7 +291,7 @@ func testNegativeQuery(t *testing.T, mm MetricRW) {
 	opts = make(map[string]string)
 	opts["thing"] = "steps"
 	opts["uid"] = "2"
-	opts["gid"] = "2"
+	opts["aid"] = "3"
 	opts["value"] = "-100"
 	opts["ts"] = "1458061005"
 	err = mm.WritePoint(opts)
@@ -321,15 +299,9 @@ func testNegativeQuery(t *testing.T, mm MetricRW) {
 		t.Fail()
 	}
 
-	qopts := make(map[string][]string)
-	qopts["uids"] = []string{"1", "2"}
-	res := mm.QueryBuckets("steps", "uids", qopts, 1458061005, 1458061010)
-	if res.XToSum["1"] != 80 {
-		t.Logf("Incorrect Sum.  Expected 80, Received %d", res.XToSum["1"])
-		t.Fail()
-	}
-	if res.XToSum["2"] != -100 {
-		t.Logf("Incorrect Sum.  Expected -100, Received %d", res.XToSum["2"])
+	sum := mm.QueryBuckets("1", "steps", "all", 1458061005, 1458061010)
+	if sum != 80 {
+		t.Logf("Incorrect Sum.  Expected 80, Received %d", sum)
 		t.Fail()
 	}
 }

@@ -3,7 +3,8 @@ package persistence
 import "time"
 import "strconv"
 import "errors"
-import "sync"
+
+//import "sync"
 import "pointspaced/psdcontext"
 import "github.com/garyburd/redigo/redis"
 import "github.com/ugorji/go/codec"
@@ -121,116 +122,173 @@ func getMyValues(key string, results *chan map[string]int64, requests *map[strin
 	*results <- entry
 }
 
-func (self RedisHZ) QueryBuckets(thing, group string, opts map[string][]string, start_ts int64, end_ts int64) XQueryResponse {
+func (self RedisHZ) QueryBuckets(uid, thing, aid string, start_ts int64, end_ts int64) int64 {
 	requests := self.requestsForRange(start_ts, end_ts)
-	qr := XQueryResponse{}
-	qr.XToSum = make(map[string]int64)
-
-	results := make(chan map[string]int64)
-
-	var wg sync.WaitGroup
-
-	dids := []string{"0"}
-	if len(opts["dids"]) > 0 {
-		dids = opts["dids"]
-	}
-	tzs := []string{"0"}
-	if len(opts["tzs"]) > 0 {
-		tzs = opts["tzs"]
-	}
-	uids := []string{"0"}
-	if len(opts["uids"]) > 0 {
-		uids = opts["uids"]
-	}
-	gids := []string{"0"}
-	if len(opts["gids"]) > 0 {
-		gids = opts["gids"]
-	}
-	aids := []string{"0"}
-	if len(opts["aids"]) > 0 {
-		aids = opts["aids"]
-	}
-	sids := []string{"0"}
-	if len(opts["sids"]) > 0 {
-		sids = opts["sids"]
+	sum := int64(0)
+	matchThing := thing2id(thing)
+	allAids := false
+	if aid == "all" {
+		allAids = true
 	}
 
-	for _, did := range dids {
-		for _, tz := range tzs {
-			for _, uid := range uids {
-				for _, gid := range gids {
-					for _, aid := range aids {
-						for _, sid := range sids {
-							key := fmt.Sprintf("hz:%s:%s:%s:%s:%s:%s:%s", did, tz, uid, gid, aid, sid, thing)
-							wg.Add(1)
-							go getMyValues(key, &results, &requests)
+	r := psdcontext.Ctx.RedisPool.Get()
+	defer r.Close()
+
+	for _, request := range requests {
+		key := fmt.Sprintf("hz:%s:%s", uid, request.TimeBucket)
+		qmin, _ := strconv.ParseInt(request.QueryMin(), 10, 64)
+		qmax, _ := strconv.ParseInt(request.QueryMax(), 10, 64)
+		r.Send("HGETALL", key)
+		r.Flush()
+		reply, _ := redis.MultiBulk(r.Receive())
+		lastThing := ""
+		lastAid := ""
+		lastBucket := int64(0)
+		for i, x := range reply {
+			if i%2 == 0 {
+				bytes := x.([]byte)
+				str := string(bytes)
+				tokens := strings.Split(str, ":")
+				lastBucket, _ = strconv.ParseInt(tokens[0], 10, 64)
+				lastThing = tokens[1]
+				lastAid = tokens[2]
+			} else {
+				bytes := x.([]byte)
+				str := string(bytes)
+				val, _ := strconv.ParseInt(str, 10, 64)
+				if lastBucket > qmax || lastBucket < qmin {
+					continue
+				}
+				if matchThing == lastThing && (allAids || aid == lastAid) {
+					sum += val
+				}
+			}
+		}
+	}
+
+	return sum
+}
+
+func foo() {
+	/*
+		requests := self.requestsForRange(start_ts, end_ts)
+		qr := XQueryResponse{}
+		qr.XToSum = make(map[string]int64)
+
+		results := make(chan map[string]int64)
+
+		var wg sync.WaitGroup
+
+		dids := []string{"0"}
+		if len(opts["dids"]) > 0 {
+			dids = opts["dids"]
+		}
+		tzs := []string{"0"}
+		if len(opts["tzs"]) > 0 {
+			tzs = opts["tzs"]
+		}
+		uids := []string{"0"}
+		if len(opts["uids"]) > 0 {
+			uids = opts["uids"]
+		}
+		gids := []string{"0"}
+		if len(opts["gids"]) > 0 {
+			gids = opts["gids"]
+		}
+		aids := []string{"0"}
+		if len(opts["aids"]) > 0 {
+			aids = opts["aids"]
+		}
+		sids := []string{"0"}
+		if len(opts["sids"]) > 0 {
+			sids = opts["sids"]
+		}
+
+		for _, did := range dids {
+			for _, tz := range tzs {
+				for _, uid := range uids {
+					for _, gid := range gids {
+						for _, aid := range aids {
+							for _, sid := range sids {
+								key := fmt.Sprintf("hz:%s:%s:%s:%s:%s:%s:%s", did, tz, uid, gid, aid, sid, thing)
+								wg.Add(1)
+								go getMyValues(key, &results, &requests)
+							}
 						}
 					}
 				}
 			}
 		}
-	}
 
-	index := 1
-	if group == "tzs" {
-		index = 2
-	} else if group == "uids" {
-		index = 3
-	} else if group == "gids" {
-		index = 4
-	} else if group == "aids" {
-		index = 5
-	} else if group == "sids" {
-		index = 6
-	}
-	go func() {
-		for entry := range results {
-			for k, v := range entry {
-				// hz:0:3600:2:0:0:0:steps
-				if group == "" {
-					qr.XToSum["0"] += v
-				} else {
-					tokens := strings.Split(k, ":")
-					qr.XToSum[tokens[index]] += v
-				}
-			}
-			wg.Done()
+		index := 1
+		if group == "tzs" {
+			index = 2
+		} else if group == "uids" {
+			index = 3
+		} else if group == "gids" {
+			index = 4
+		} else if group == "aids" {
+			index = 5
+		} else if group == "sids" {
+			index = 6
 		}
-	}()
+		go func() {
+			for entry := range results {
+				for k, v := range entry {
+					// hz:0:3600:2:0:0:0:steps
+					if group == "" {
+						qr.XToSum["0"] += v
+					} else {
+						tokens := strings.Split(k, ":")
+						qr.XToSum[tokens[index]] += v
+					}
+				}
+				wg.Done()
+			}
+		}()
 
-	wg.Wait()
+		wg.Wait()
 
-	return qr
+		return qr
+	*/
 }
 
 func (self RedisHZ) ReadBuckets(uids []int64, metric string, aTypes []int64, start_ts int64, end_ts int64) QueryResponse {
 
 	//fmt.Println("[Hashzilla] START", start_ts, "END", end_ts)
-	requests := self.requestsForRange(start_ts, end_ts)
+	//requests := self.requestsForRange(start_ts, end_ts)
 	//fmt.Println("[Hashzilla] Requests:", requests)
 
 	qr := QueryResponse{}
 	qr.UserToSum = make(map[string]int64, len(uids))
 
-	var wg sync.WaitGroup
-	wg.Add(len(uids))
-
-	results := make(chan map[int64]int64)
-
 	for _, uid := range uids {
-		go oldGetMyValues(uid, &results, &requests, metric)
+		sum := self.QueryBuckets(fmt.Sprintf("%d", uid), "points", "all", start_ts, end_ts)
+		qr.UserToSum[fmt.Sprintf("%d", uid)] = sum
 	}
 
-	go func() {
-		for entry := range results {
-			for k, v := range entry {
-				qr.UserToSum[fmt.Sprintf("%d", k)] = v
-			}
-			wg.Done()
-		}
-	}()
+	/*
 
-	wg.Wait()
+		var wg sync.WaitGroup
+		wg.Add(len(uids))
+
+		results := make(chan map[int64]int64)
+
+		for _, uid := range uids {
+			go oldGetMyValues(uid, &results, &requests, metric)
+		}
+
+		go func() {
+			for entry := range results {
+				for k, v := range entry {
+					qr.UserToSum[fmt.Sprintf("%d", k)] = v
+				}
+				wg.Done()
+			}
+		}()
+
+		wg.Wait()
+	*/
 
 	return qr
 }
@@ -403,23 +461,28 @@ func (self RedisHZ) requestsForRange(start_ts int64, end_ts int64) map[string]Re
 func (self RedisHZ) OldWritePoint(thing string, userId, value, activityId, ts int64) error {
 	opts := make(map[string]string)
 	opts["thing"] = thing
-	opts["tz"] = ""
 	opts["uid"] = fmt.Sprintf("%d", userId)
 	opts["aid"] = fmt.Sprintf("%d", activityId)
 	opts["value"] = fmt.Sprintf("%d", value)
 	opts["ts"] = fmt.Sprintf("%d", ts)
-	opts["sid"] = ""
-	opts["did"] = ""
-	opts["gid"] = ""
 	return self.WritePoint(opts)
 }
 
+func thing2id(thing string) string {
+	if thing == "steps" {
+		return "1"
+	}
+	if thing == "calories" {
+		return "2"
+	}
+	if thing == "points" {
+		return "3"
+	}
+	return ""
+}
+
 func (self RedisHZ) WritePoint(opts map[string]string) error {
-	tz := opts["tz"]
-	thing := opts["thing"]
-	sid := opts["sid"]
-	did := opts["did"]
-	gid := opts["gid"]
+	thing := thing2id(opts["thing"])
 	uid := opts["uid"]
 	aid := opts["aid"]
 	value := opts["value"]
@@ -428,6 +491,8 @@ func (self RedisHZ) WritePoint(opts map[string]string) error {
 
 	if (value == "") ||
 		(ts == "") ||
+		(uid == "") ||
+		(aid == "") ||
 		(thing == "") {
 		return errors.New("invalid arguments")
 	}
@@ -448,53 +513,17 @@ func (self RedisHZ) WritePoint(opts map[string]string) error {
 				set_timestamp = buckets[idx+1]
 			}
 
-			// hz:device:tz:user_id:g:activity_id:service:thing:time
-			// hz:ios:la:1:m:3:fitbit:points
-			// hz:0:0:0:0:0:0:points
+			// "hz:1:2016" 201603:3:3" 123
 
-			// hz:ios:0:0:0:0:0:points
+			key := fmt.Sprintf("hz:%s:%s", uid, bucket)
 
-			for _, d := range []string{"0", did} {
-				if d == "" {
-					continue
-				}
-				for _, t := range []string{"0", tz} {
-					if t == "" {
-						continue
-					}
-					for _, u := range []string{"0", uid} {
-						if u == "" {
-							continue
-						}
-						for _, g := range []string{"0", gid} {
-							if g == "" {
-								continue
-							}
-							for _, a := range []string{"0", aid} {
-								if a == "" {
-									continue
-								}
-								for _, s := range []string{"0", sid} {
-									if s == "" {
-										continue
-									}
-
-									key := fmt.Sprintf("hz:%s:%s:%s:%s:%s:%s:%s:%s",
-										d, t, u, g, a, s, thing, bucket)
-
-									// TODO LOCKING
-									r.Send("MULTI")
-									r.Send("HINCRBY", key, set_timestamp, value)
-									r.Send("EXPIRE", key, psdcontext.Ctx.Config.RedisConfig.Expire)
-									_, err := r.Do("EXEC")
-									if err != nil {
-										return err
-									}
-								}
-							}
-						}
-					}
-				}
+			// TODO LOCKING
+			r.Send("MULTI")
+			r.Send("HINCRBY", key, fmt.Sprintf("%s:%s:%s", set_timestamp, thing, aid), value)
+			r.Send("EXPIRE", key, psdcontext.Ctx.Config.RedisConfig.Expire)
+			_, err := r.Do("EXEC")
+			if err != nil {
+				return err
 			}
 		}
 	}
