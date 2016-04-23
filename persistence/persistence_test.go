@@ -206,12 +206,12 @@ func BenchmarkHZ_ManyMultiUserRead(b *testing.B) {
 
 func testMetricRWInterface(t *testing.T, mm MetricRW) {
 	testValidRead(t, mm)
-	//testMultiDayValidRead(t, mm)
-	//testEvenLongerMultiDayValidRead(t, mm)
-	//testReallyLongValidRead(t, mm)
-	//testMultiUserLongRead(t, mm)
-	//testSmallKeyQuery(t, mm)
-	//testNegativeQuery(t, mm)
+	testMultiDayValidRead(t, mm)
+	testEvenLongerMultiDayValidRead(t, mm)
+	testReallyLongValidRead(t, mm)
+	testMultiUserLongRead(t, mm)
+	testSmallKeyQuery(t, mm)
+	testNegativeQuery(t, mm)
 }
 
 func clearRedisCompletely() {
