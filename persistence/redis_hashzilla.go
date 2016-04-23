@@ -124,6 +124,7 @@ func getMyValues(key string, results *chan map[string]int64, requests *map[strin
 func (self RedisHZ) QueryBuckets(uid, thing, aid string, start_ts int64, end_ts int64) int64 {
 	requests := self.requestsForRange(start_ts, end_ts)
 	sum := int64(0)
+	matchThing := thing2id(thing)
 
 	r := psdcontext.Ctx.RedisPool.Get()
 	defer r.Close()
@@ -135,6 +136,7 @@ func (self RedisHZ) QueryBuckets(uid, thing, aid string, start_ts int64, end_ts 
 		r.Send("HGETALL", key)
 		r.Flush()
 		reply, _ := redis.MultiBulk(r.Receive())
+		lastThing := ""
 		for i, x := range reply {
 			if i%2 == 0 {
 				bytes := x.([]byte)
@@ -142,14 +144,16 @@ func (self RedisHZ) QueryBuckets(uid, thing, aid string, start_ts int64, end_ts 
 				tokens := strings.Split(str, ":")
 				bucket := tokens[0]
 				fmt.Println("aaa ", bucket, qmin, qmax)
-				thing := tokens[1]
+				lastThing = tokens[1]
 				aid := tokens[2]
 				fmt.Println(thing, aid)
 			} else {
 				bytes := x.([]byte)
 				str := string(bytes)
 				val, _ := strconv.ParseInt(str, 10, 64)
-				sum += val
+				if matchThing == lastThing {
+					sum += val
+				}
 			}
 		}
 	}
@@ -452,8 +456,21 @@ func (self RedisHZ) OldWritePoint(thing string, userId, value, activityId, ts in
 	return self.WritePoint(opts)
 }
 
+func thing2id(thing string) string {
+	if thing == "steps" {
+		return "1"
+	}
+	if thing == "calories" {
+		return "2"
+	}
+	if thing == "points" {
+		return "3"
+	}
+	return ""
+}
+
 func (self RedisHZ) WritePoint(opts map[string]string) error {
-	thing := opts["thing"]
+	thing := thing2id(opts["thing"])
 	uid := opts["uid"]
 	aid := opts["aid"]
 	value := opts["value"]
@@ -490,7 +507,7 @@ func (self RedisHZ) WritePoint(opts map[string]string) error {
 
 			// TODO LOCKING
 			r.Send("MULTI")
-			r.Send("HINCRBY", key, fmt.Sprintf("%s:%s:%s", set_timestamp, "1", aid), value)
+			r.Send("HINCRBY", key, fmt.Sprintf("%s:%s:%s", set_timestamp, thing, aid), value)
 			r.Send("EXPIRE", key, psdcontext.Ctx.Config.RedisConfig.Expire)
 			_, err := r.Do("EXEC")
 			if err != nil {
