@@ -237,6 +237,13 @@ func testSmallKeyQuery(t *testing.T, mm MetricRW) {
 	if err != nil {
 		t.Fail()
 	}
+	opts["value"] = "124"
+	opts["ts"] = "1458061006"
+
+	err = mm.WritePoint(opts)
+	if err != nil {
+		t.Fail()
+	}
 	res := mm.QueryBuckets("1", "steps", "3", 1458061005, 1458061010)
 	fmt.Println(res)
 }

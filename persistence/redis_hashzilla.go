@@ -131,18 +131,17 @@ func (self RedisHZ) QueryBuckets(uid, thing, aid string, start_ts int64, end_ts 
 	defer r.Close()
 
 	for _, request := range requests {
-		key := fmt.Sprintf("hz:%s:%s", "1", request.TimeBucket)
-		qmin, _ := strconv.Atoi(request.QueryMin())
+		key := fmt.Sprintf("hz:%s:%s", uid, request.TimeBucket)
+		//qmin, _ := strconv.Atoi(request.QueryMin())
 		//qmax, _ := strconv.Atoi(request.QueryMax())
-		subkey := fmt.Sprintf("%d:%s:%s", qmin, "1", aid)
-		r.Send("HGET", key, subkey)
+		r.Send("HGETALL", key)
+		r.Flush()
+		reply, _ := redis.MultiBulk(r.Receive())
+		for _, x := range reply {
+			v := x.([]byte)
+			fmt.Println(string(v))
+		}
 	}
-
-	r.Flush()
-	v, err := redis.Int64(r.Receive())
-	if err != nil {
-	}
-	fmt.Println(v)
 
 	return qr
 }
