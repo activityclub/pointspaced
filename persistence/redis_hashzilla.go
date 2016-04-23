@@ -3,7 +3,8 @@ package persistence
 import "time"
 import "strconv"
 import "errors"
-import "sync"
+
+//import "sync"
 import "pointspaced/psdcontext"
 import "github.com/garyburd/redigo/redis"
 import "github.com/ugorji/go/codec"
@@ -255,31 +256,39 @@ func foo() {
 func (self RedisHZ) ReadBuckets(uids []int64, metric string, aTypes []int64, start_ts int64, end_ts int64) QueryResponse {
 
 	//fmt.Println("[Hashzilla] START", start_ts, "END", end_ts)
-	requests := self.requestsForRange(start_ts, end_ts)
+	//requests := self.requestsForRange(start_ts, end_ts)
 	//fmt.Println("[Hashzilla] Requests:", requests)
 
 	qr := QueryResponse{}
 	qr.UserToSum = make(map[string]int64, len(uids))
 
-	var wg sync.WaitGroup
-	wg.Add(len(uids))
-
-	results := make(chan map[int64]int64)
-
 	for _, uid := range uids {
-		go oldGetMyValues(uid, &results, &requests, metric)
+		sum := self.QueryBuckets(fmt.Sprintf("%d", uid), "points", "all", start_ts, end_ts)
+		qr.UserToSum[fmt.Sprintf("%d", uid)] = sum
 	}
 
-	go func() {
-		for entry := range results {
-			for k, v := range entry {
-				qr.UserToSum[fmt.Sprintf("%d", k)] = v
-			}
-			wg.Done()
-		}
-	}()
+	/*
 
-	wg.Wait()
+		var wg sync.WaitGroup
+		wg.Add(len(uids))
+
+		results := make(chan map[int64]int64)
+
+		for _, uid := range uids {
+			go oldGetMyValues(uid, &results, &requests, metric)
+		}
+
+		go func() {
+			for entry := range results {
+				for k, v := range entry {
+					qr.UserToSum[fmt.Sprintf("%d", k)] = v
+				}
+				wg.Done()
+			}
+		}()
+
+		wg.Wait()
+	*/
 
 	return qr
 }
@@ -452,14 +461,10 @@ func (self RedisHZ) requestsForRange(start_ts int64, end_ts int64) map[string]Re
 func (self RedisHZ) OldWritePoint(thing string, userId, value, activityId, ts int64) error {
 	opts := make(map[string]string)
 	opts["thing"] = thing
-	opts["tz"] = ""
 	opts["uid"] = fmt.Sprintf("%d", userId)
 	opts["aid"] = fmt.Sprintf("%d", activityId)
 	opts["value"] = fmt.Sprintf("%d", value)
 	opts["ts"] = fmt.Sprintf("%d", ts)
-	opts["sid"] = ""
-	opts["did"] = ""
-	opts["gid"] = ""
 	return self.WritePoint(opts)
 }
 
