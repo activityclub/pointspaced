@@ -135,26 +135,29 @@ func (self RedisHZ) QueryBuckets(uid, thing, aid string, start_ts int64, end_ts 
 
 	for _, request := range requests {
 		key := fmt.Sprintf("hz:%s:%s", uid, request.TimeBucket)
-		qmin, _ := strconv.Atoi(request.QueryMin())
-		qmax, _ := strconv.Atoi(request.QueryMax())
+		qmin, _ := strconv.ParseInt(request.QueryMin(), 10, 64)
+		qmax, _ := strconv.ParseInt(request.QueryMax(), 10, 64)
 		r.Send("HGETALL", key)
 		r.Flush()
 		reply, _ := redis.MultiBulk(r.Receive())
 		lastThing := ""
 		lastAid := ""
+		lastBucket := int64(0)
 		for i, x := range reply {
 			if i%2 == 0 {
 				bytes := x.([]byte)
 				str := string(bytes)
 				tokens := strings.Split(str, ":")
-				bucket := tokens[0]
-				fmt.Println("aaa ", bucket, qmin, qmax)
+				lastBucket, _ = strconv.ParseInt(tokens[0], 10, 64)
 				lastThing = tokens[1]
 				lastAid = tokens[2]
 			} else {
 				bytes := x.([]byte)
 				str := string(bytes)
 				val, _ := strconv.ParseInt(str, 10, 64)
+				if lastBucket > qmax || lastBucket < qmin {
+					continue
+				}
 				if matchThing == lastThing && (allAids || aid == lastAid) {
 					sum += val
 				}

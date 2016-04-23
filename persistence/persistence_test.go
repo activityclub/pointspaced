@@ -237,6 +237,10 @@ func testSmallKeyQuery(t *testing.T, mm MetricRW) {
 	opts["aid"] = "11"
 	opts["ts"] = "1458061006"
 	mm.WritePoint(opts)
+	opts["value"] = "500"
+	opts["aid"] = "11"
+	opts["ts"] = "1458061011"
+	mm.WritePoint(opts)
 	opts["thing"] = "steps"
 	opts["value"] = "200"
 	opts["aid"] = "3"
