@@ -232,19 +232,17 @@ func testSmallKeyQuery(t *testing.T, mm MetricRW) {
 	opts["aid"] = "10"
 	opts["value"] = "100"
 	opts["ts"] = "1458061005"
-
-	err := mm.WritePoint(opts)
-	if err != nil {
-		t.Fail()
-	}
+	mm.WritePoint(opts)
 	opts["value"] = "200"
 	opts["aid"] = "11"
 	opts["ts"] = "1458061006"
+	mm.WritePoint(opts)
+	opts["thing"] = "steps"
+	opts["value"] = "200"
+	opts["aid"] = "3"
+	opts["ts"] = "1458061007"
+	mm.WritePoint(opts)
 
-	err = mm.WritePoint(opts)
-	if err != nil {
-		t.Fail()
-	}
 	sum := mm.QueryBuckets("1", "points", "all", 1458061005, 1458061010)
 	if sum != 300 {
 		t.Logf("Incorrect Sum.  Expected 300, Received %d", sum)

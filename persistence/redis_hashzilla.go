@@ -149,7 +149,7 @@ func (self RedisHZ) QueryBuckets(uid, thing, aid string, start_ts int64, end_ts 
 				bytes := x.([]byte)
 				str := string(bytes)
 				val, _ := strconv.ParseInt(str, 10, 64)
-				fmt.Println(val)
+				sum += val
 			}
 		}
 	}
