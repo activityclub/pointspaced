@@ -36,7 +36,7 @@ type MetricRW interface {
 	WritePoint(opts map[string]string) error
 	OldWritePoint(thing string, userId, value, activityId, ts int64) error
 	ReadBuckets(uids []int64, metric string, aTypes []int64, start_ts int64, end_ts int64) QueryResponse
-	QueryBuckets(uid, thing, aid string, start_ts int64, end_ts int64) XQueryResponse
+	QueryBuckets(uid, thing, aid string, start_ts int64, end_ts int64) int64
 }
 
 type MetricManager struct {

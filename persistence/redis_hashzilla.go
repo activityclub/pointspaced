@@ -121,10 +121,9 @@ func getMyValues(key string, results *chan map[string]int64, requests *map[strin
 	*results <- entry
 }
 
-func (self RedisHZ) QueryBuckets(uid, thing, aid string, start_ts int64, end_ts int64) XQueryResponse {
+func (self RedisHZ) QueryBuckets(uid, thing, aid string, start_ts int64, end_ts int64) int64 {
 	requests := self.requestsForRange(start_ts, end_ts)
-	qr := XQueryResponse{}
-	qr.XToSum = make(map[string]int64)
+	sum := int64(0)
 
 	r := psdcontext.Ctx.RedisPool.Get()
 	defer r.Close()
@@ -155,7 +154,7 @@ func (self RedisHZ) QueryBuckets(uid, thing, aid string, start_ts int64, end_ts 
 		}
 	}
 
-	return qr
+	return sum
 }
 
 func foo() {
