@@ -3,7 +3,7 @@ package v1
 import "github.com/gin-gonic/gin"
 import "pointspaced/persistence"
 import "strconv"
-import "strings"
+import "fmt"
 
 func Query(c *gin.Context) {
 
@@ -14,6 +14,8 @@ func Query(c *gin.Context) {
 	thing := c.Param("thing")
 	start_ts := c.Param("start_ts")
 	end_ts := c.Param("end_ts")
+	uid := c.Param("uid")
+	aid := c.Param("aid")
 
 	start_ts_int, _ := strconv.ParseInt(start_ts, 10, 64)
 	end_ts_int, _ := strconv.ParseInt(end_ts, 10, 64)
