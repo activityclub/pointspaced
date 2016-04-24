@@ -478,6 +478,9 @@ func thing2id(thing string) string {
 	if thing == "points" {
 		return "3"
 	}
+	if thing == "distance" {
+		return "4"
+	}
 	return ""
 }
 
