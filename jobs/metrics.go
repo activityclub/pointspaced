@@ -6,6 +6,7 @@ import "pointspaced/persistence"
 type MetricJob struct {
 	Thing string `json:"thing"`
 	Uid   int64  `json:"uid"`
+	Atid  int64  `json:"atid"`
 	Aid   int64  `json:"aid"`
 	Value int64  `json:"value"`
 	Ts    int64  `json:"ts"`
@@ -21,18 +22,11 @@ func ProcessMetricJob(metric MetricJob) {
 	}
 	opts := make(map[string]string)
 	opts["thing"] = metric.Thing
-	if metric.Uid > 0 {
-		opts["uid"] = fmt.Sprintf("%d", metric.Uid)
-	}
-	if metric.Aid > 0 {
-		opts["aid"] = fmt.Sprintf("%d", metric.Aid)
-	}
-
+	opts["uid"] = fmt.Sprintf("%d", metric.Uid)
+	opts["atid"] = fmt.Sprintf("%d", metric.Atid)
+	opts["aid"] = fmt.Sprintf("%d", metric.Aid)
 	opts["value"] = fmt.Sprintf("%d", metric.Value)
-
-	if metric.Ts > 0 {
-		opts["ts"] = fmt.Sprintf("%d", metric.Ts)
-	}
+	opts["ts"] = fmt.Sprintf("%d", metric.Ts)
 
 	err := curManager.WritePoint(opts)
 	if err != nil {
