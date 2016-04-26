@@ -122,12 +122,7 @@ func getMyValues(key string, results *chan map[string]int64, requests *map[strin
 	*results <- entry
 }
 
-func (self RedisHZ) QueryForAid(uid, thing, aid string, ts int64) int64 {
-	//self.QueryBuckets(uid, thing, "all", ts, ts)
-	return int64(0)
-}
-
-func (self RedisHZ) QueryBuckets(uid, thing, atid string, start_ts int64, end_ts int64) int64 {
+func (self RedisHZ) QueryBuckets(uid, thing, aid, atid string, start_ts int64, end_ts int64) int64 {
 	requests := self.requestsForRange(start_ts, end_ts)
 	sum := int64(0)
 	matchThing := thing2id(thing)
@@ -135,19 +130,23 @@ func (self RedisHZ) QueryBuckets(uid, thing, atid string, start_ts int64, end_ts
 	if atid == "all" {
 		allAtids = true
 	}
+	allAids := false
+	if aid == "all" {
+		allAids = true
+	}
 
 	r := psdcontext.Ctx.RedisPool.Get()
 	defer r.Close()
 
 	for _, request := range requests {
-		key := fmt.Sprintf("hz:%s:%s", uid, request.TimeBucket)
+		key := fmt.Sprintf("hz:%s:%s:%s", matchThing, uid, request.TimeBucket)
 		qmin, _ := strconv.ParseInt(request.QueryMin(), 10, 64)
 		qmax, _ := strconv.ParseInt(request.QueryMax(), 10, 64)
 		r.Send("HGETALL", key)
 		r.Flush()
 		reply, _ := redis.MultiBulk(r.Receive())
-		lastThing := ""
 		lastAtid := ""
+		lastAid := ""
 		lastBucket := int64(0)
 		for i, x := range reply {
 			if i%2 == 0 {
@@ -155,8 +154,8 @@ func (self RedisHZ) QueryBuckets(uid, thing, atid string, start_ts int64, end_ts
 				str := string(bytes)
 				tokens := strings.Split(str, ":")
 				lastBucket, _ = strconv.ParseInt(tokens[0], 10, 64)
-				lastThing = tokens[1]
-				lastAtid = tokens[2]
+				lastAtid = tokens[1]
+				lastAid = tokens[2]
 			} else {
 				bytes := x.([]byte)
 				str := string(bytes)
@@ -164,7 +163,11 @@ func (self RedisHZ) QueryBuckets(uid, thing, atid string, start_ts int64, end_ts
 				if lastBucket > qmax || lastBucket < qmin {
 					continue
 				}
-				if matchThing == lastThing && (allAtids || atid == lastAtid) {
+				if allAtids && allAids {
+					sum += val
+				} else if allAids == false && lastAid == aid {
+					sum += val
+				} else if allAtids == false && lastAtid == atid {
 					sum += val
 				}
 			}
@@ -268,7 +271,7 @@ func (self RedisHZ) ReadBuckets(uids []int64, metric string, aTypes []int64, sta
 	qr.UserToSum = make(map[string]int64, len(uids))
 
 	for _, uid := range uids {
-		sum := self.QueryBuckets(fmt.Sprintf("%d", uid), "points", "all", start_ts, end_ts)
+		sum := self.QueryBuckets(fmt.Sprintf("%d", uid), "points", "all", "all", start_ts, end_ts)
 		qr.UserToSum[fmt.Sprintf("%d", uid)] = sum
 	}
 
@@ -498,11 +501,14 @@ func (self RedisHZ) WritePoint(opts map[string]string) error {
 	atid := opts["atid"]
 	aid := opts["aid"]
 	value := opts["value"]
-	ts := opts["ts"]
-	tsi, _ := strconv.ParseInt(ts, 10, 64)
+	created_at := opts["ts1"]
+	created_ati, _ := strconv.ParseInt(created_at, 10, 64)
+	updated_at := opts["ts2"]
+	updated_ati, _ := strconv.ParseInt(updated_at, 10, 64)
 
 	if (value == "") ||
-		(ts == "") ||
+		(created_at == "") ||
+		(updated_at == "") ||
 		(uid == "") ||
 		(atid == "") ||
 		(aid == "") ||
@@ -511,8 +517,14 @@ func (self RedisHZ) WritePoint(opts map[string]string) error {
 	}
 
 	//sum := self.QueryForAid(uid, thing, aid, tsi)
+	sum := self.QueryBuckets(uid, thing, aid, "all", created_ati, updated_ati)
+	fmt.Println("aaa ", sum)
 
-	buckets, err := self.bucketsForJob(tsi)
+	//rails - oh activity id 777 now has 4022 points as of $updated_at_ts
+	//> psd -> ok so 777 needs to have 4022 as of updated_at_ts, lets do a query using the normal hashzilla stuff, but lets filtre it by activity id 777 ..
+	//> psd -> ok so at $updated_at we only have 4011, so we are missing 11 points, so lets insert hincrby += 11 for $updated_at
+
+	buckets, err := self.bucketsForJob(updated_ati)
 
 	r := psdcontext.Ctx.RedisPool.Get()
 
@@ -523,19 +535,19 @@ func (self RedisHZ) WritePoint(opts map[string]string) error {
 		for idx, bucket := range buckets {
 			// figure out when this is
 
-			set_timestamp := time.Unix(tsi, int64(0)).UTC().Format("20060102150405")
+			set_timestamp := time.Unix(updated_ati, int64(0)).UTC().Format("20060102150405")
 			if len(buckets) > idx+1 {
 				set_timestamp = buckets[idx+1]
 			}
 
 			// "hz:1:2016" 201603:3:3" 123
 
-			key := fmt.Sprintf("hz:%s:%s", uid, bucket)
+			key := fmt.Sprintf("hz:%s:%s:%s", thing, uid, bucket)
 
 			// TODO LOCKING do a full query first, and then calculate yourself what hincrby would be
 			// add it as a suffix and you would still talley everything thats 3 to be walking daily
 			r.Send("MULTI")
-			r.Send("HINCRBY", key, fmt.Sprintf("%s:%s:%s", set_timestamp, thing, atid), value)
+			r.Send("HINCRBY", key, fmt.Sprintf("%s:%s:%s", set_timestamp, atid, aid), value)
 			r.Send("EXPIRE", key, psdcontext.Ctx.Config.RedisConfig.Expire)
 			_, err := r.Do("EXEC")
 			if err != nil {

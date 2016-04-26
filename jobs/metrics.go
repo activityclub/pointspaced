@@ -9,14 +9,15 @@ type MetricJob struct {
 	Atid  int64  `json:"atid"`
 	Aid   int64  `json:"aid"`
 	Value int64  `json:"value"`
-	Ts    int64  `json:"ts"`
+	Ts1   int64  `json:"ts1"`
+	Ts2   int64  `json:"ts2"`
 }
 
 var curManager *persistence.MetricManager = nil
 
 func ProcessMetricJob(metric MetricJob) {
 	fmt.Println("-> [MetricJob] Processing Job, THING=", metric.Thing)
-	fmt.Println("\tTs=", metric.Ts)
+	fmt.Println("\tTs2=", metric.Ts2)
 	if curManager == nil {
 		curManager = persistence.NewMetricManagerHZ()
 	}
@@ -26,7 +27,8 @@ func ProcessMetricJob(metric MetricJob) {
 	opts["atid"] = fmt.Sprintf("%d", metric.Atid)
 	opts["aid"] = fmt.Sprintf("%d", metric.Aid)
 	opts["value"] = fmt.Sprintf("%d", metric.Value)
-	opts["ts"] = fmt.Sprintf("%d", metric.Ts)
+	opts["ts1"] = fmt.Sprintf("%d", metric.Ts1)
+	opts["ts2"] = fmt.Sprintf("%d", metric.Ts2)
 
 	err := curManager.WritePoint(opts)
 	if err != nil {
