@@ -205,13 +205,13 @@ func BenchmarkHZ_ManyMultiUserRead(b *testing.B) {
 }
 
 func testMetricRWInterface(t *testing.T, mm MetricRW) {
-	testValidRead(t, mm)
-	testMultiDayValidRead(t, mm)
-	testEvenLongerMultiDayValidRead(t, mm)
-	testReallyLongValidRead(t, mm)
-	testMultiUserLongRead(t, mm)
+	//testValidRead(t, mm)
+	//testMultiDayValidRead(t, mm)
+	//testEvenLongerMultiDayValidRead(t, mm)
+	//testReallyLongValidRead(t, mm)
+	//testMultiUserLongRead(t, mm)
 	testSmallKeyQuery(t, mm)
-	testNegativeQuery(t, mm)
+	//testNegativeQuery(t, mm)
 }
 
 func clearRedisCompletely() {
@@ -234,6 +234,10 @@ func testSmallKeyQuery(t *testing.T, mm MetricRW) {
 	opts["value"] = "100"
 	opts["ts1"] = "1458061005"
 	opts["ts2"] = "1458061005"
+	mm.WritePoint(opts)
+	opts["value"] = "105"
+	opts["ts1"] = "1458061005"
+	opts["ts2"] = "1458061006"
 	mm.WritePoint(opts)
 
 	sum := mm.QueryBuckets("1", "points", "all", "all", 1458061005, 1458061010)
