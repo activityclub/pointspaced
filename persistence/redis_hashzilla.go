@@ -165,13 +165,10 @@ func (self RedisHZ) QueryBuckets(uid, thing, aid, atid string, start_ts int64, e
 				}
 				if allAtids && allAids {
 					sum += val
-				} else {
-					if allAids == false && lastAid == aid {
-						sum += val
-					}
-					if allAtids == false && lastAtid == atid {
-						sum += val
-					}
+				} else if allAids == false && lastAid == aid {
+					sum += val
+				} else if allAtids == false && lastAtid == atid {
+					sum += val
 				}
 			}
 		}
