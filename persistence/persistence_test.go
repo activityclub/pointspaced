@@ -442,8 +442,8 @@ func testMultiUserLongRead(t *testing.T, mm MetricRW) {
 	res := mm.ReadBuckets([]int64{1, 2, 3, 327}, "points", []int64{3}, 1451635200, 1458061011)
 	for _, uid := range []int64{1, 2, 3, 327} {
 		s := fmt.Sprintf("%d", uid)
-		if res.UserToSum[s] != 3958 {
-			t.Errorf("Incorrect Sum For Uid %d.  Expected 3958, Received %d", uid, res.UserToSum[s])
+		if res.UserToSum[s] != 3957 {
+			t.Errorf("Incorrect Sum For Uid %d.  Expected 3957, Received %d", uid, res.UserToSum[s])
 		}
 	}
 	for _, uid := range []int64{1, 2, 3, 327} {
