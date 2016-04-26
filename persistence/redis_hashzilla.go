@@ -165,10 +165,13 @@ func (self RedisHZ) QueryBuckets(uid, thing, aid, atid string, start_ts int64, e
 				}
 				if allAtids && allAids {
 					sum += val
-				} else if allAids == false && lastAid == aid {
-					sum += val
-				} else if allAtids == false && lastAtid == atid {
-					sum += val
+				} else {
+					if allAids == false && lastAid == aid {
+						sum += val
+					}
+					if allAtids == false && lastAtid == atid {
+						sum += val
+					}
 				}
 			}
 		}
@@ -503,6 +506,7 @@ func (self RedisHZ) WritePoint(opts map[string]string) error {
 	atid := opts["atid"]
 	aid := opts["aid"]
 	value := opts["value"]
+	valuei, _ := strconv.ParseInt(value, 10, 64)
 	created_at := opts["ts1"]
 	created_ati, _ := strconv.ParseInt(created_at, 10, 64)
 	updated_at := opts["ts2"]
@@ -518,10 +522,8 @@ func (self RedisHZ) WritePoint(opts map[string]string) error {
 		return errors.New("invalid arguments")
 	}
 
-	//sum := self.QueryForAid(uid, thing, aid, tsi)
-	sum := self.QueryBuckets(uid, thing, aid, "all", created_ati, updated_ati)
-	if sum > 0 {
-	}
+	sum := self.QueryBuckets(uid, opts["thing"], aid, "all", created_ati, updated_ati)
+	valuei = valuei - sum
 
 	//rails - oh activity id 777 now has 4022 points as of $updated_at_ts
 	//> psd -> ok so 777 needs to have 4022 as of updated_at_ts, lets do a query using the normal hashzilla stuff, but lets filtre it by activity id 777 ..
@@ -550,7 +552,7 @@ func (self RedisHZ) WritePoint(opts map[string]string) error {
 			// TODO LOCKING do a full query first, and then calculate yourself what hincrby would be
 			// add it as a suffix and you would still talley everything thats 3 to be walking daily
 			r.Send("MULTI")
-			r.Send("HINCRBY", key, fmt.Sprintf("%s:%s:%s", set_timestamp, atid, aid), value)
+			r.Send("HINCRBY", key, fmt.Sprintf("%s:%s:%s", set_timestamp, atid, aid), valuei)
 			r.Send("EXPIRE", key, psdcontext.Ctx.Config.RedisConfig.Expire)
 			_, err := r.Do("EXEC")
 			if err != nil {
