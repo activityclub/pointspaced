@@ -256,12 +256,12 @@ func testSmallKeyQuery(t *testing.T, mm MetricRW) {
 	opts["ts"] = "1458061007"
 	mm.WritePoint(opts)
 
-	sum := mm.QueryBuckets("1", "points", "all", 1458061005, 1458061010)
+	sum := mm.QueryBuckets("1", "points", "all", "all", 1458061005, 1458061010)
 	if sum != 300 {
 		t.Logf("Incorrect Sum.  Expected 300, Received %d", sum)
 		t.Fail()
 	}
-	sum = mm.QueryBuckets("1", "points", "10", 1458061005, 1458061010)
+	sum = mm.QueryBuckets("1", "points", "10", "all", 1458061005, 1458061010)
 	if sum != 100 {
 		t.Logf("Incorrect Sum.  Expected 100, Received %d", sum)
 		t.Fail()
@@ -304,7 +304,7 @@ func testNegativeQuery(t *testing.T, mm MetricRW) {
 		t.Fail()
 	}
 
-	sum := mm.QueryBuckets("1", "steps", "all", 1458061005, 1458061010)
+	sum := mm.QueryBuckets("1", "steps", "all", "all", 1458061005, 1458061010)
 	if sum != 80 {
 		t.Logf("Incorrect Sum.  Expected 80, Received %d", sum)
 		t.Fail()
