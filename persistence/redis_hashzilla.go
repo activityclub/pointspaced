@@ -122,13 +122,18 @@ func getMyValues(key string, results *chan map[string]int64, requests *map[strin
 	*results <- entry
 }
 
-func (self RedisHZ) QueryBuckets(uid, thing, aid string, start_ts int64, end_ts int64) int64 {
+func (self RedisHZ) QueryForAid(uid, thing, aid string, ts int64) int64 {
+	//self.QueryBuckets(uid, thing, "all", ts, ts)
+	return int64(0)
+}
+
+func (self RedisHZ) QueryBuckets(uid, thing, atid string, start_ts int64, end_ts int64) int64 {
 	requests := self.requestsForRange(start_ts, end_ts)
 	sum := int64(0)
 	matchThing := thing2id(thing)
-	allAids := false
-	if aid == "all" {
-		allAids = true
+	allAtids := false
+	if atid == "all" {
+		allAtids = true
 	}
 
 	r := psdcontext.Ctx.RedisPool.Get()
@@ -142,7 +147,7 @@ func (self RedisHZ) QueryBuckets(uid, thing, aid string, start_ts int64, end_ts 
 		r.Flush()
 		reply, _ := redis.MultiBulk(r.Receive())
 		lastThing := ""
-		lastAid := ""
+		lastAtid := ""
 		lastBucket := int64(0)
 		for i, x := range reply {
 			if i%2 == 0 {
@@ -151,7 +156,7 @@ func (self RedisHZ) QueryBuckets(uid, thing, aid string, start_ts int64, end_ts 
 				tokens := strings.Split(str, ":")
 				lastBucket, _ = strconv.ParseInt(tokens[0], 10, 64)
 				lastThing = tokens[1]
-				lastAid = tokens[2]
+				lastAtid = tokens[2]
 			} else {
 				bytes := x.([]byte)
 				str := string(bytes)
@@ -159,7 +164,7 @@ func (self RedisHZ) QueryBuckets(uid, thing, aid string, start_ts int64, end_ts 
 				if lastBucket > qmax || lastBucket < qmin {
 					continue
 				}
-				if matchThing == lastThing && (allAids || aid == lastAid) {
+				if matchThing == lastThing && (allAtids || atid == lastAtid) {
 					sum += val
 				}
 			}
@@ -490,6 +495,7 @@ func thing2id(thing string) string {
 func (self RedisHZ) WritePoint(opts map[string]string) error {
 	thing := thing2id(opts["thing"])
 	uid := opts["uid"]
+	atid := opts["atid"]
 	aid := opts["aid"]
 	value := opts["value"]
 	ts := opts["ts"]
@@ -498,10 +504,13 @@ func (self RedisHZ) WritePoint(opts map[string]string) error {
 	if (value == "") ||
 		(ts == "") ||
 		(uid == "") ||
+		(atid == "") ||
 		(aid == "") ||
 		(thing == "") {
 		return errors.New("invalid arguments")
 	}
+
+	//sum := self.QueryForAid(uid, thing, aid, tsi)
 
 	buckets, err := self.bucketsForJob(tsi)
 
@@ -523,9 +532,10 @@ func (self RedisHZ) WritePoint(opts map[string]string) error {
 
 			key := fmt.Sprintf("hz:%s:%s", uid, bucket)
 
-			// TODO LOCKING
+			// TODO LOCKING do a full query first, and then calculate yourself what hincrby would be
+			// add it as a suffix and you would still talley everything thats 3 to be walking daily
 			r.Send("MULTI")
-			r.Send("HINCRBY", key, fmt.Sprintf("%s:%s:%s", set_timestamp, thing, aid), value)
+			r.Send("HINCRBY", key, fmt.Sprintf("%s:%s:%s", set_timestamp, thing, atid), value)
 			r.Send("EXPIRE", key, psdcontext.Ctx.Config.RedisConfig.Expire)
 			_, err := r.Do("EXEC")
 			if err != nil {
