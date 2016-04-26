@@ -466,13 +466,15 @@ func (self RedisHZ) requestsForRange(start_ts int64, end_ts int64) map[string]Re
 
 }
 
-func (self RedisHZ) OldWritePoint(thing string, userId, value, activityId, ts int64) error {
+func (self RedisHZ) OldWritePoint(thing string, userId, value, atid, ts int64) error {
 	opts := make(map[string]string)
 	opts["thing"] = thing
 	opts["uid"] = fmt.Sprintf("%d", userId)
-	opts["aid"] = fmt.Sprintf("%d", activityId)
+	opts["aid"] = "1001"
+	opts["atid"] = fmt.Sprintf("%d", atid)
 	opts["value"] = fmt.Sprintf("%d", value)
-	opts["ts"] = fmt.Sprintf("%d", ts)
+	opts["ts1"] = fmt.Sprintf("%d", ts)
+	opts["ts2"] = fmt.Sprintf("%d", ts)
 	return self.WritePoint(opts)
 }
 
@@ -518,6 +520,8 @@ func (self RedisHZ) WritePoint(opts map[string]string) error {
 
 	//sum := self.QueryForAid(uid, thing, aid, tsi)
 	sum := self.QueryBuckets(uid, thing, aid, "all", created_ati, updated_ati)
+	if sum > 0 {
+	}
 
 	//rails - oh activity id 777 now has 4022 points as of $updated_at_ts
 	//> psd -> ok so 777 needs to have 4022 as of updated_at_ts, lets do a query using the normal hashzilla stuff, but lets filtre it by activity id 777 ..
