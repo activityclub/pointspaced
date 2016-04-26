@@ -518,7 +518,6 @@ func (self RedisHZ) WritePoint(opts map[string]string) error {
 
 	//sum := self.QueryForAid(uid, thing, aid, tsi)
 	sum := self.QueryBuckets(uid, thing, aid, "all", created_ati, updated_ati)
-	fmt.Println("aaa ", sum)
 
 	//rails - oh activity id 777 now has 4022 points as of $updated_at_ts
 	//> psd -> ok so 777 needs to have 4022 as of updated_at_ts, lets do a query using the normal hashzilla stuff, but lets filtre it by activity id 777 ..

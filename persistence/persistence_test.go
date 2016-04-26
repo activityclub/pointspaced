@@ -211,7 +211,7 @@ func testMetricRWInterface(t *testing.T, mm MetricRW) {
 	//testReallyLongValidRead(t, mm)
 	//testMultiUserLongRead(t, mm)
 	testSmallKeyQuery(t, mm)
-	//testNegativeQuery(t, mm)
+	testNegativeQuery(t, mm)
 }
 
 func clearRedisCompletely() {
@@ -232,36 +232,11 @@ func testSmallKeyQuery(t *testing.T, mm MetricRW) {
 	opts["atid"] = "10"
 	opts["aid"] = "1001"
 	opts["value"] = "100"
-	opts["ts"] = "1458061005"
-	mm.WritePoint(opts)
-	opts["value"] = "200"
-	opts["atid"] = "11"
-	opts["aid"] = "1002"
-	opts["ts"] = "1458061006"
-	mm.WritePoint(opts)
-	opts["value"] = "500"
-	opts["atid"] = "11"
-	opts["aid"] = "1002"
-	opts["ts"] = "1458061011"
-	mm.WritePoint(opts)
-	opts["value"] = "500"
-	opts["atid"] = "11"
-	opts["aid"] = "1002"
-	opts["ts"] = "1458061004"
-	mm.WritePoint(opts)
-	opts["thing"] = "steps"
-	opts["value"] = "200"
-	opts["atid"] = "3"
-	opts["aid"] = "1003"
-	opts["ts"] = "1458061007"
+	opts["ts1"] = "1458061005"
+	opts["ts2"] = "1458061005"
 	mm.WritePoint(opts)
 
 	sum := mm.QueryBuckets("1", "points", "all", "all", 1458061005, 1458061010)
-	if sum != 300 {
-		t.Logf("Incorrect Sum.  Expected 300, Received %d", sum)
-		t.Fail()
-	}
-	sum = mm.QueryBuckets("1", "points", "10", "all", 1458061005, 1458061010)
 	if sum != 100 {
 		t.Logf("Incorrect Sum.  Expected 100, Received %d", sum)
 		t.Fail()
@@ -275,8 +250,10 @@ func testNegativeQuery(t *testing.T, mm MetricRW) {
 	opts["thing"] = "steps"
 	opts["uid"] = "1"
 	opts["aid"] = "3"
+	opts["atid"] = "3"
 	opts["value"] = "100"
-	opts["ts"] = "1458061005"
+	opts["ts1"] = "1458061005"
+	opts["ts2"] = "1458061005"
 	err := mm.WritePoint(opts)
 	if err != nil {
 		t.Fail()
@@ -286,8 +263,10 @@ func testNegativeQuery(t *testing.T, mm MetricRW) {
 	opts["thing"] = "steps"
 	opts["uid"] = "1"
 	opts["aid"] = "3"
+	opts["atid"] = "3"
 	opts["value"] = "-20"
-	opts["ts"] = "1458061007"
+	opts["ts1"] = "1458061007"
+	opts["ts2"] = "1458061007"
 	err = mm.WritePoint(opts)
 	if err != nil {
 		t.Fail()
@@ -297,8 +276,10 @@ func testNegativeQuery(t *testing.T, mm MetricRW) {
 	opts["thing"] = "steps"
 	opts["uid"] = "2"
 	opts["aid"] = "3"
+	opts["atid"] = "3"
 	opts["value"] = "-100"
-	opts["ts"] = "1458061005"
+	opts["ts1"] = "1458061005"
+	opts["ts2"] = "1458061005"
 	err = mm.WritePoint(opts)
 	if err != nil {
 		t.Fail()
