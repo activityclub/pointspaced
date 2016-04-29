@@ -42,6 +42,7 @@ type MetricRW interface {
 type CountRW interface {
 	IncrementCount(thing string, ts, value int64) error
 	ReadCount(thing string, start_ts, end_ts int64) int64
+	requestsForRange(start_ts int64, end_ts int64) map[string]RedisHZRequest
 }
 
 type MetricManager struct {

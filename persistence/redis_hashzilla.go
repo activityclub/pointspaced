@@ -308,6 +308,7 @@ func (self RedisHZ) requestsForRange(start_ts int64, end_ts int64) map[string]Re
 	cursor := NewRedisACRCursor(from, to)
 
 	//fmt.Println("[Hashzilla] requestsForRange FROM", from, "TO", to)
+	//fmt.Println("Z", from.Format("20060102"))
 
 	reqs := map[string]RedisHZRequest{}
 
@@ -326,7 +327,7 @@ func (self RedisHZ) requestsForRange(start_ts int64, end_ts int64) map[string]Re
 			break
 		}
 
-		//		fmt.Println("HRM", cursor.Cursor, "TO", cursor.To)
+		//fmt.Println("HRM", cursor.Cursor, "TO", cursor.To)
 
 		if cursor.CanJumpYear() {
 			reqs[cursor.YearKey()] = NewRedisHZRequest(cursor.YearKey(), 1, 12)
@@ -381,10 +382,12 @@ func (self RedisHZ) requestsForRange(start_ts int64, end_ts int64) map[string]Re
 			if exists {
 				ch := false
 				if entry.ScoreMin > cursor.Hour() {
+					//fmt.Println("S1-b", cursor.DayKey(), cursor.Hour())
 					entry.ScoreMin = cursor.Hour()
 					ch = true
 				}
 				if entry.ScoreMax < cursor.Hour() {
+					//fmt.Println("S1-c", cursor.DayKey(), cursor.Hour())
 					entry.ScoreMax = cursor.Hour()
 					ch = true
 				}
@@ -392,6 +395,7 @@ func (self RedisHZ) requestsForRange(start_ts int64, end_ts int64) map[string]Re
 					reqs[cursor.DayKey()] = entry
 				}
 			} else {
+				//fmt.Println("S1", cursor.DayKey(), cursor.Hour(), cursor.Hour())
 				reqs[cursor.DayKey()] = NewRedisHZRequest(cursor.DayKey(), cursor.Hour(), cursor.Hour())
 			}
 
@@ -471,6 +475,7 @@ func (self RedisHZ) OldWritePoint(thing string, userId, value, atid, ts int64) e
 	opts["thing"] = thing
 	opts["uid"] = fmt.Sprintf("%d", userId)
 	opts["aid"] = "1001"
+	opts["mode"] = "increment"
 	opts["atid"] = fmt.Sprintf("%d", atid)
 	opts["value"] = fmt.Sprintf("%d", value)
 	opts["ts1"] = fmt.Sprintf("%d", ts)
@@ -498,12 +503,15 @@ func thing2id(thing string) string {
 }
 
 func (self RedisHZ) WritePoint(opts map[string]string) error {
+
 	thing := thing2id(opts["thing"])
 	uid := opts["uid"]
 	atid := opts["atid"]
 	aid := opts["aid"]
+
 	value := opts["value"]
 	valuei, _ := strconv.ParseInt(value, 10, 64)
+
 	created_at := opts["ts1"]
 	created_ati, _ := strconv.ParseInt(created_at, 10, 64)
 	updated_at := opts["ts2"]
@@ -519,7 +527,11 @@ func (self RedisHZ) WritePoint(opts map[string]string) error {
 		return errors.New("invalid arguments")
 	}
 
-	sum := self.QueryBuckets(uid, opts["thing"], aid, "all", created_ati, updated_ati)
+	mode, useMode := opts["mode"]
+	sum := int64(0)
+	if useMode == false || mode == "diffadd" {
+		sum = self.QueryBuckets(uid, opts["thing"], aid, "all", created_ati, updated_ati)
+	}
 	valuei = valuei - sum
 	if valuei == 0 {
 		return nil
@@ -626,10 +638,15 @@ func (self RedisHZ) ReadCount(thing string, start_ts, end_ts int64) int64 {
 	defer r.Close()
 
 	for _, request := range requests {
+		//		fmt.Println("REQ", request)
 		key := fmt.Sprintf("c:%s:%s", thing, request.TimeBucket)
 		qmin, _ := strconv.ParseInt(request.QueryMin(), 10, 64)
 		qmax, _ := strconv.ParseInt(request.QueryMax(), 10, 64)
+		//		fmt.Println("QMIN", qmin)
+		//		fmt.Println("QMAX", qmax)
+		//		fmt.Println("KEY", key)
 		r.Send("HGETALL", key)
+
 		r.Flush()
 		reply, _ := redis.MultiBulk(r.Receive())
 		lastBucket := int64(0)
@@ -638,12 +655,16 @@ func (self RedisHZ) ReadCount(thing string, start_ts, end_ts int64) int64 {
 				bytes := x.([]byte)
 				lastBucketStr := string(bytes)
 				lastBucket, _ = strconv.ParseInt(lastBucketStr, 10, 64)
+				//				fmt.Println("LB", lastBucket)
 			} else {
 				bytes := x.([]byte)
 				str := string(bytes)
 				val, _ := strconv.ParseInt(str, 10, 64)
 				if lastBucket > qmax || lastBucket < qmin {
 					continue
+				} else {
+					//					fmt.Println("VAL ACCEPT", lastBucket)
+					//					fmt.Println("VAL", val)
 				}
 				sum += val
 			}

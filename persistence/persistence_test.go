@@ -102,6 +102,9 @@ func TestSimple(t *testing.T) {
 func TestHZ(t *testing.T) {
 	testMetricRWInterface(t, NewMetricManagerHZ())
 }
+func TestCountHZ(t *testing.T) {
+	testCountRWInterface(t, NewCountManagerHZ())
+}
 
 /*
 func BenchmarkSimple_WriteOneHundred(b *testing.B) {
@@ -442,8 +445,8 @@ func testMultiUserLongRead(t *testing.T, mm MetricRW) {
 	res := mm.ReadBuckets([]int64{1, 2, 3, 327}, "points", []int64{3}, 1451635200, 1458061011)
 	for _, uid := range []int64{1, 2, 3, 327} {
 		s := fmt.Sprintf("%d", uid)
-		if res.UserToSum[s] != 3957 {
-			t.Errorf("Incorrect Sum For Uid %d.  Expected 3957, Received %d", uid, res.UserToSum[s])
+		if res.UserToSum[s] != 3958 {
+			t.Errorf("Incorrect Sum For Uid %d.  Expected 3958, Received %d", uid, res.UserToSum[s])
 		}
 	}
 	for _, uid := range []int64{1, 2, 3, 327} {
@@ -452,6 +455,59 @@ func testMultiUserLongRead(t *testing.T, mm MetricRW) {
 		if res.UserToSum[s] != 3013 {
 			t.Errorf("Incorrect Sum.  Expected 3013, Received %d", res.UserToSum[s])
 		}
+	}
+}
+
+func testCountRWInterface(t *testing.T, cm CountRW) {
+	countTestEvenLongerMultiDayValidRead(t, cm)
+}
+
+func countTestEvenLongerMultiDayValidRead(t *testing.T, cm CountRW) {
+	clearRedisCompletely()
+	/*
+		st1 := int64(1461826800)
+		st2 := int64(1461914059)
+		//requests := cm.requestsForRange(st1, st2)
+		cm.ReadCount("new_hifive", st1, st2)
+		fmt.Println("xxx")
+	*/
+
+	// we will write 10 points
+	err := cm.IncrementCount("newsignup", 1451635204, 100)
+	if err != nil {
+		t.Fail()
+	}
+
+	err = cm.IncrementCount("newsignup", 1454313600, 200)
+	if err != nil {
+		t.Fail()
+	}
+
+	err = cm.IncrementCount("newsignup", 1458061005, 10)
+	if err != nil {
+		t.Fail()
+	}
+
+	// add 11 points
+	err = cm.IncrementCount("newsignup", 1458061008, 11)
+	if err != nil {
+		t.Fail()
+	}
+
+	// add 1 point
+	err = cm.IncrementCount("newsignup", 1458061011, 1)
+	if err != nil {
+		t.Fail()
+	}
+
+	res := cm.ReadCount("newsignup", 1451635200, 1458061011)
+	if res != 322 {
+		fmt.Println("res", res)
+		t.Errorf("Incorrect Sum.  Expected 322, Received %d", res)
+	}
+	res = cm.ReadCount("newsignup", 1451635205, 1458061010)
+	if res != 221 {
+		t.Errorf("Incorrect Sum.  Expected 221, Received %d", res)
 	}
 }
 

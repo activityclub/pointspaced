@@ -157,32 +157,32 @@ func (self *RedisACRCursor) Second() int {
 
 func (self *RedisACRCursor) JumpYear() {
 	self.Cursor = self.Cursor.AddDate(1, 0, 0)
-	self._YearKey = self.Cursor.Format("2006")
+	self.updateState()
 }
 
 func (self *RedisACRCursor) JumpMonth() {
 	self.Cursor = self.Cursor.AddDate(0, 1, 0)
-	self._MonthKey = self.Cursor.Format("200601")
+	self.updateState()
 }
 
 func (self *RedisACRCursor) JumpDay() {
 	self.Cursor = self.Cursor.AddDate(0, 0, 1)
-	self._DayKey = self.Cursor.Format("20060102")
+	self.updateState()
 }
 
 func (self *RedisACRCursor) JumpHour() {
 	self.Cursor = self.Cursor.Add(time.Hour)
-	self._HourKey = self.Cursor.Format("2006010215")
+	self.updateState()
 }
 
 func (self *RedisACRCursor) JumpMinute() {
 	self.Cursor = self.Cursor.Add(time.Minute)
-	self._MinuteKey = self.Cursor.Format("200601021504")
+	self.updateState()
 }
 
 func (self *RedisACRCursor) JumpSecond() {
 	self.Cursor = self.Cursor.Add(time.Second)
-	self._SecondKey = self.Cursor.Format("20060102150405")
+	self.updateState()
 }
 
 func (self *RedisACRCursor) updateState() {
