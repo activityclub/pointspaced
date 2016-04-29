@@ -24,3 +24,15 @@ func Query(c *gin.Context) {
 
 	c.String(200, fmt.Sprintf("%d", sum))
 }
+
+func ReadCount(c *gin.Context) {
+	cm := persistence.NewCountManagerHZ()
+	thing := c.Param("thing")
+	start_ts := c.Param("start_ts")
+	end_ts := c.Param("end_ts")
+
+	start_ts_int, _ := strconv.ParseInt(start_ts, 10, 64)
+	end_ts_int, _ := strconv.ParseInt(end_ts, 10, 64)
+	sum := cm.ReadCount(thing, start_ts_int, end_ts_int)
+	c.String(200, fmt.Sprintf("%d", sum))
+}

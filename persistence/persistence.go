@@ -41,6 +41,7 @@ type MetricRW interface {
 
 type CountRW interface {
 	IncrementCount(thing string, ts, value int64) error
+	ReadCount(thing string, start_ts, end_ts int64) int64
 }
 
 type MetricManager struct {

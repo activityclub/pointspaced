@@ -618,3 +618,37 @@ func (self RedisHZ) IncrementCount(thing string, ts, value int64) error {
 	}
 	return nil
 }
+
+func (self RedisHZ) ReadCount(thing string, start_ts, end_ts int64) int64 {
+	requests := self.requestsForRange(start_ts, end_ts)
+	sum := int64(0)
+	r := psdcontext.Ctx.RedisPool.Get()
+	defer r.Close()
+
+	for _, request := range requests {
+		key := fmt.Sprintf("c:%s:%s", thing, request.TimeBucket)
+		qmin, _ := strconv.ParseInt(request.QueryMin(), 10, 64)
+		qmax, _ := strconv.ParseInt(request.QueryMax(), 10, 64)
+		r.Send("HGETALL", key)
+		r.Flush()
+		reply, _ := redis.MultiBulk(r.Receive())
+		lastBucket := int64(0)
+		for i, x := range reply {
+			if i%2 == 0 {
+				bytes := x.([]byte)
+				lastBucketStr := string(bytes)
+				lastBucket, _ = strconv.ParseInt(lastBucketStr, 10, 64)
+			} else {
+				bytes := x.([]byte)
+				str := string(bytes)
+				val, _ := strconv.ParseInt(str, 10, 64)
+				if lastBucket > qmax || lastBucket < qmin {
+					continue
+				}
+				sum += val
+			}
+		}
+	}
+
+	return sum
+}
