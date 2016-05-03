@@ -544,6 +544,7 @@ func (self RedisHZ) WritePoint(opts map[string]string) error {
 	buckets, err := self.bucketsForJob(updated_ati)
 
 	r := psdcontext.Ctx.RedisPool.Get()
+	r.Send("MULTI")
 
 	if err != nil {
 		return err
@@ -561,18 +562,15 @@ func (self RedisHZ) WritePoint(opts map[string]string) error {
 
 			key := fmt.Sprintf("hz:%s:%s:%s", thing, uid, bucket)
 
-			// TODO LOCKING do a full query first, and then calculate yourself what hincrby would be
-			// add it as a suffix and you would still talley everything thats 3 to be walking daily
-			r.Send("MULTI")
 			r.Send("HINCRBY", key, fmt.Sprintf("%s:%s:%s", set_timestamp, atid, aid), valuei)
 			r.Send("EXPIRE", key, psdcontext.Ctx.Config.RedisConfig.Expire)
-			_, err := r.Do("EXEC")
-			if err != nil {
-				return err
-			}
 		}
 	}
 
+	_, err = r.Do("EXEC")
+	if err != nil {
+		return err
+	}
 	r.Close()
 	return nil
 }
