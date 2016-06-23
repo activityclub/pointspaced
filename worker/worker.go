@@ -15,17 +15,18 @@ type WorkerMessage struct {
 }
 
 func Run() {
-
 	wg := &sync.WaitGroup{}
+	wg.Add(1) // just means .. uhh dont quit?
 
-	// how many at a time (TODO configurable)
-	wg.Add(1)
+	// TODO - enhanced configuration
 
 	config := nsq.NewConfig()
+	config.UserAgent = fmt.Sprintf("PSD/0.1")
+	config.MaxInFlight = 4
 
-	// todo pull the topic and channel names out of config
 	q, _ := nsq.NewConsumer("psd", "psd", config)
-	q.AddHandler(nsq.HandlerFunc(func(nsqMsg *nsq.Message) error {
+
+	q.AddConcurrentHandlers(nsq.HandlerFunc(func(nsqMsg *nsq.Message) error {
 
 		fmt.Println(string(nsqMsg.Body))
 		message := WorkerMessage{}
@@ -50,7 +51,7 @@ func Run() {
 
 		//		wg.Done()
 		return nil
-	}))
+	}), 4)
 
 	// TODO multiple nsqlookupds
 	err := q.ConnectToNSQLookupd(psdcontext.Ctx.Config.NSQConfig.NSQLookupds[0])
