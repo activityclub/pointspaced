@@ -15,9 +15,8 @@ type MetricJob struct {
 
 var curManager *persistence.MetricManager = nil
 
-func ProcessMetricJob(metric MetricJob) {
+func ProcessMetricJob(metric MetricJob) error {
 	fmt.Println("-> [MetricJob] Processing Job, THING=", metric.Thing)
-	fmt.Println("\tTs2=", metric.Ts2)
 	if curManager == nil {
 		curManager = persistence.NewMetricManagerHZ()
 	}
@@ -33,5 +32,7 @@ func ProcessMetricJob(metric MetricJob) {
 	err := curManager.WritePoint(opts)
 	if err != nil {
 		fmt.Println("trying to write a point and " + err.Error())
+		return err
 	}
+	return nil
 }
