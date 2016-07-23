@@ -25,44 +25,46 @@ func TestMain(m *testing.M) {
 
 	rx := psdcontext.Ctx.RedisPool.Get()
 
-	psdcontext.Ctx.AgScript = redis.NewScript(-1, `local sum = 0
+	psdcontext.Ctx.AgScript = redis.NewScript(-1, `
+local sum = 0
+local atids = {}
+local aids = {}
 for _, packed in ipairs(ARGV) do
-  local unpacked = cmsgpack.unpack(packed)
-  local cscore
-  for i, v in ipairs(redis.call('HGETALL', unpacked[1])) do
-    if i % 2 == 1 then
-    cscore = tonumber(v)
-    else
-      if cscore >= unpacked[2] and cscore <= unpacked[3] then
-        sum = sum + v
-      end
-    end
-  end
+        local unpacked = cmsgpack.unpack(packed)
+        local res = redis.call('HGETALL', unpacked[1])
+        for i, v in ipairs(res) do
+                if i % 2 == 0 then
+                        local cscore = tonumber(v)
+			local idx = 0
+                        local tsv = 0
+                        local aid = "all"
+                        local atid = "all"
+                        for word in string.gmatch(res[i-1], '[^:]+') do
+		                if idx == 0 then
+		                   tsv = tonumber(word)
+				elseif idx == 1 then
+				   atid = word
+				elseif idx == 2 then
+				   aid = word
+		                end
+                                idx = idx + 1
+                        end
+                        if tsv >= unpacked[2] and tsv <= unpacked[3] then
+				if unpacked[4] == "all" or unpacked[4] == atid then
+					if unpacked[5] == "all" or unpacked[5] == aid then
+	                                	sum = sum + cscore
+						if aids[aid] then
+						else
+						  atids[#atids+1] = tonumber(atid)
+						  aids[aid] = true
+						end
+					end
+				end
+                        end
+                end
+        end
 end
-return sum`)
-
-	/*
-	   	psdcontext.Ctx.AgScript = redis.NewScript(-1, `local sum = 0
-	   local pos = 1
-	   for _, key in ipairs(KEYS) do
-	     local bulk = redis.call('HGETALL', key)
-	     local result = {}
-	     local cscore
-	     local offset_a = pos
-	     local offset_b = pos+1
-	     for i, v in ipairs(bulk) do
-	       if i % 2 == 1 then
-	         cscore = v
-	       else
-	         if cscore >= ARGV[offset_a] and cscore <= ARGV[offset_b] then
-	           sum = sum + v
-	         end
-	       end
-	     end
-	     pos = pos +  2
-	   end
-	   return sum`)
-	*/
+return {sum, atids}`)
 
 	err := psdcontext.Ctx.AgScript.Load(rx)
 	if err != nil {
@@ -91,14 +93,6 @@ func randInt(min int, max int) int {
 	return min + rand.Intn(max-min)
 }
 
-func TestACR(t *testing.T) {
-	//testMetricRWInterface(t, NewMetricManagerACR())
-}
-
-func TestSimple(t *testing.T) {
-	//testMetricRWInterface(t, NewMetricManagerSimple())
-}
-
 func TestHZ(t *testing.T) {
 	testMetricRWInterface(t, NewMetricManagerHZ())
 }
@@ -106,75 +100,6 @@ func TestCountHZ(t *testing.T) {
 	testCountRWInterface(t, NewCountManagerHZ())
 }
 
-/*
-func BenchmarkSimple_WriteOneHundred(b *testing.B) {
-	benchmarkWriteN(b, NewMetricManagerSimple(), 100)
-}
-
-func BenchmarkSimple_WriteOneThousand(b *testing.B) {
-	benchmarkWriteN(b, NewMetricManagerSimple(), 1000)
-}
-
-func BenchmarkSimple_WriteTenThousand(b *testing.B) {
-	benchmarkWriteN(b, NewMetricManagerSimple(), 10000)
-}
-
-func BenchmarkSimple_ShortRead(b *testing.B) {
-	benchShortRead(b, NewMetricManagerSimple())
-}
-
-func BenchmarkSimple_MediumRead(b *testing.B) {
-	benchMediumRead(b, NewMetricManagerSimple())
-}
-
-func BenchmarkSimple_LongRead(b *testing.B) {
-	benchLongRead(b, NewMetricManagerSimple())
-}
-
-func BenchmarkSimple_MultiUserRead(b *testing.B) {
-	benchMultiUserLongRead(b, NewMetricManagerSimple())
-}
-
-func BenchmarkSimple_ManyMultiUserRead(b *testing.B) {
-	benchManyMultiUserLongRead(b, NewMetricManagerSimple())
-}
-
-// --------------
-
-func BenchmarkACR_WriteOneHundred(b *testing.B) {
-	benchmarkWriteN(b, NewMetricManagerACR(), 100)
-}
-
-func BenchmarkACR_WriteOneThousand(b *testing.B) {
-	benchmarkWriteN(b, NewMetricManagerACR(), 1000)
-}
-
-func BenchmarkACR_WriteTenThousand(b *testing.B) {
-	benchmarkWriteN(b, NewMetricManagerACR(), 10000)
-}
-
-func BenchmarkACR_ShortRead(b *testing.B) {
-	benchShortRead(b, NewMetricManagerACR())
-}
-
-func BenchmarkACR_MediumRead(b *testing.B) {
-	benchMediumRead(b, NewMetricManagerACR())
-}
-
-func BenchmarkACR_LongRead(b *testing.B) {
-	benchLongRead(b, NewMetricManagerACR())
-}
-
-func BenchmarkACR_MultiUserRead(b *testing.B) {
-	benchMultiUserLongRead(b, NewMetricManagerACR())
-}
-
-func BenchmarkACR_ManyMultiUserRead(b *testing.B) {
-	benchManyMultiUserLongRead(b, NewMetricManagerACR())
-}
-*/
-
-// ------
 func BenchmarkHZ_WriteOneHundred(b *testing.B) {
 	benchmarkWriteN(b, NewMetricManagerHZ(), 100)
 }
@@ -243,7 +168,31 @@ func testSmallKeyQuery(t *testing.T, mm MetricRW) {
 	opts["ts2"] = "1458061006"
 	mm.WritePoint(opts)
 
-	sum := mm.QueryBuckets("1", "points", "all", "all", 1458061005, 1458061010)
+	sum, _ := mm.QueryBucketsLua("1", "points", "all", "all", 1458061005, 1458061010)
+	if sum != 105 {
+		t.Logf("Incorrect Sum.  Expected 105, Received %d", sum)
+		t.Fail()
+	}
+}
+
+func testSmallKeyQueryLua(t *testing.T, mm MetricRW) {
+	clearRedisCompletely()
+
+	opts := make(map[string]string)
+	opts["thing"] = "points"
+	opts["uid"] = "1"
+	opts["atid"] = "10"
+	opts["aid"] = "1001"
+	opts["value"] = "100"
+	opts["ts1"] = "1458061005"
+	opts["ts2"] = "1458061005"
+	mm.WritePoint(opts)
+	opts["value"] = "105"
+	opts["ts1"] = "1458061005"
+	opts["ts2"] = "1458061006"
+	mm.WritePoint(opts)
+
+	sum, _ := mm.QueryBucketsLua("1", "points", "all", "all", 1458061005, 1458061010)
 	if sum != 105 {
 		t.Logf("Incorrect Sum.  Expected 105, Received %d", sum)
 		t.Fail()
@@ -292,7 +241,7 @@ func testNegativeQuery(t *testing.T, mm MetricRW) {
 		t.Fail()
 	}
 
-	sum := mm.QueryBuckets("1", "steps", "all", "all", 1458061005, 1458061010)
+	sum, _ := mm.QueryBucketsLua("1", "steps", "all", "all", 1458061005, 1458061010)
 	if sum != 80 {
 		t.Logf("Incorrect Sum.  Expected 80, Received %d", sum)
 		t.Fail()

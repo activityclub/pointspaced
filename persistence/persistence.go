@@ -32,11 +32,23 @@ type QueryResponse struct {
 	XToSum    map[string]int64 `json:"results"`
 }
 
+type MUResponse struct {
+	Values map[string]int64   `json:"values"`
+	ATids  map[string][]int64 `json:"atids"`
+}
+
+type MUMTResponse struct {
+	Data map[string]map[string]interface{} `json:"data"`
+}
+
 type MetricRW interface {
 	WritePoint(opts map[string]string) error
 	OldWritePoint(thing string, userId, value, activityId, ts int64) error
 	ReadBuckets(uids []int64, metric string, aTypes []int64, start_ts int64, end_ts int64) QueryResponse
 	QueryBuckets(uid, thing, aid, atid string, start_ts int64, end_ts int64) int64
+	QueryBucketsLua(uid, thing, aid, atid string, start_ts int64, end_ts int64) (int64, []int64)
+	MultiUserQuery(uids []string, thing, atid string, start_ts int64, end_ts int64) (*MUResponse, error)
+	MultiUserMultiThingQuery(uids, things []string, atid string, start_ts int64, end_ts int64) (*MUMTResponse, error)
 }
 
 type CountRW interface {
