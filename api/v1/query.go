@@ -104,7 +104,8 @@ func MultiUserMultiThingQuery(c *gin.Context) {
 	ts1, _ := strconv.ParseInt(start_ts, 10, 64)
 	ts2, _ := strconv.ParseInt(end_ts, 10, 64)
 
-	mumtresp, err := mm.MultiUserMultiThingQuery(uids, things, atid, ts1, ts2)
+	//mumtresp, err := mm.MultiUserMultiThingQuery(uids, things, atid, ts1, ts2)
+	mumtresp, err := mm.MultiQueryBuckets(uids, things, atid, ts1, ts2)
 	if err != nil {
 		c.JSON(422, gin.H{"error": err.Error()})
 		return

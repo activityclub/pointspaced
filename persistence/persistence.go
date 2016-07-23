@@ -49,6 +49,7 @@ type MetricRW interface {
 	QueryBucketsLua(uid, thing, aid, atid string, start_ts int64, end_ts int64) (int64, []int64)
 	MultiUserQuery(uids []string, thing, atid string, start_ts int64, end_ts int64) (*MUResponse, error)
 	MultiUserMultiThingQuery(uids, things []string, atid string, start_ts int64, end_ts int64) (*MUMTResponse, error)
+	MultiQueryBuckets(uids, things []string, atid string, start_ts int64, end_ts int64) (*MUMTResponse, error)
 }
 
 type CountRW interface {

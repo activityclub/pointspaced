@@ -102,6 +102,113 @@ func (self RedisHZ) QueryBuckets(uid, thing, aid, atid string, start_ts int64, e
 	return sum
 }
 
+func (self RedisHZ) MultiQueryBuckets(uids, things []string, atid string, start_ts int64, end_ts int64) (*MUMTResponse, error) {
+	requests := self.requestsForRange(start_ts, end_ts)
+
+	r := psdcontext.Ctx.RedisPool.Get()
+	defer r.Close()
+
+	minSent := map[string]map[string][]int64{}
+	maxSent := map[string]map[string][]int64{}
+
+	for _, uid := range uids {
+
+		minSent[uid] = map[string][]int64{}
+		maxSent[uid] = map[string][]int64{}
+
+		for _, thing := range things {
+
+			minSent[uid][thing] = []int64{}
+			maxSent[uid][thing] = []int64{}
+
+			matchThing := thing2id(thing)
+
+			for _, request := range requests {
+				key := fmt.Sprintf("hz:%s:%s:%s", matchThing, uid, request.TimeBucket)
+				r.Send("HGETALL", key)
+				qmin, _ := strconv.ParseInt(request.QueryMin(), 10, 64)
+				minSent[uid][thing] = append(minSent[uid][thing], qmin)
+				qmax, _ := strconv.ParseInt(request.QueryMax(), 10, 64)
+				maxSent[uid][thing] = append(maxSent[uid][thing], qmax)
+			}
+		}
+	}
+
+	r.Flush()
+
+	//	fmt.Println("mS", minSent)
+	//	fmt.Println("Ms", maxSent)
+
+	mumtresp := MUMTResponse{}
+	mumtresp.Data = make(map[string]map[string]interface{})
+
+	for _, uid := range uids {
+		if mumtresp.Data[uid] == nil {
+			mumtresp.Data[uid] = make(map[string]interface{})
+		}
+
+		atids := []int64{}
+		aids := map[int64]bool{}
+
+		for _, thing := range things {
+			sum := int64(0)
+			for qidx, qmin := range minSent[uid][thing] {
+				qmax := maxSent[uid][thing][qidx]
+				reply, _ := redis.MultiBulk(r.Receive())
+				lastAtid := ""
+				lastAid := ""
+				lastBucket := int64(0)
+				for i, x := range reply {
+					if i%2 == 0 {
+						bytes := x.([]byte)
+						str := string(bytes)
+						tokens := strings.Split(str, ":")
+						lastBucket, _ = strconv.ParseInt(tokens[0], 10, 64)
+						lastAtid = tokens[1]
+						lastAid = tokens[2]
+					} else {
+						bytes := x.([]byte)
+						str := string(bytes)
+						val, _ := strconv.ParseInt(str, 10, 64)
+						if lastBucket > qmax || lastBucket < qmin {
+							continue
+						}
+						if atid == "all" || lastAtid == atid {
+							sum += val
+						}
+					}
+				}
+
+				if lastAid != "" {
+					lastAidInt, _ := strconv.ParseInt(lastAid, 10, 64)
+
+					_, exists := aids[lastAidInt]
+					if !exists {
+						if lastAtid != "" {
+							aids[lastAidInt] = true
+							lastAtidInt, _ := strconv.ParseInt(lastAtid, 10, 64)
+							atids = append(atids, lastAtidInt)
+						}
+					}
+				}
+
+			}
+			mumtresp.Data[uid][thing] = sum
+		}
+		mumtresp.Data[uid]["_atids"] = atids
+	}
+
+	for idx, m := range mumtresp.Data {
+		if len(m["_atids"].([]int64)) == 0 {
+			delete(mumtresp.Data, idx)
+		} else if m["points"] != nil && m["points"].(int64) == 0 {
+			delete(mumtresp.Data, idx)
+		}
+	}
+
+	return &mumtresp, nil
+}
+
 // returns count, and activity type ids that we saw making the count
 func (self RedisHZ) QueryBucketsLua(uid, thing, aid, atid string, start_ts int64, end_ts int64) (int64, []int64) {
 
@@ -245,7 +352,7 @@ func (self RedisHZ) MultiUserMultiThingQuery(uids, things []string, atid string,
 	defer r.Close()
 
 	mumtresp := MUMTResponse{}
-	mumtresp.Data = make(map[string]map[string]interface{}) //, len(uids))
+	mumtresp.Data = make(map[string]map[string]interface{})
 
 	for _, uid := range uids {
 		for _, thing := range things {
@@ -304,6 +411,12 @@ func (self RedisHZ) MultiUserMultiThingQuery(uids, things []string, atid string,
 			if mumtresp.Data[uid]["_atids"] == nil || len(atids) > len(mumtresp.Data[uid]["_atids"].([]int64)) {
 				mumtresp.Data[uid]["_atids"] = atids
 			}
+		}
+	}
+
+	for idx, m := range mumtresp.Data {
+		if len(m["_atids"].([]int64)) == 0 {
+			delete(mumtresp.Data, idx)
 		}
 	}
 
