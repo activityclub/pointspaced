@@ -7,6 +7,7 @@ import "pointspaced/psdcontext"
 import "github.com/garyburd/redigo/redis"
 import "github.com/ugorji/go/codec"
 import "fmt"
+import "sort"
 import "strings"
 
 type RedisHZ struct {
@@ -111,6 +112,12 @@ func (self RedisHZ) MultiQueryBuckets(uids, things []string, atid string, start_
 	minSent := map[string]map[string][]int64{}
 	maxSent := map[string]map[string][]int64{}
 
+	var reqkeys []string
+	for idx, _ := range requests {
+		reqkeys = append(reqkeys, idx)
+	}
+	sort.Strings(reqkeys)
+
 	for _, uid := range uids {
 
 		minSent[uid] = map[string][]int64{}
@@ -123,7 +130,8 @@ func (self RedisHZ) MultiQueryBuckets(uids, things []string, atid string, start_
 
 			matchThing := thing2id(thing)
 
-			for _, request := range requests {
+			for _, rk := range reqkeys {
+				request := requests[rk]
 				key := fmt.Sprintf("hz:%s:%s:%s", matchThing, uid, request.TimeBucket)
 				r.Send("HGETALL", key)
 				qmin, _ := strconv.ParseInt(request.QueryMin(), 10, 64)
@@ -135,9 +143,6 @@ func (self RedisHZ) MultiQueryBuckets(uids, things []string, atid string, start_
 	}
 
 	r.Flush()
-
-	//	fmt.Println("mS", minSent)
-	//	fmt.Println("Ms", maxSent)
 
 	mumtresp := MUMTResponse{}
 	mumtresp.Data = make(map[string]map[string]interface{})
@@ -164,30 +169,37 @@ func (self RedisHZ) MultiQueryBuckets(uids, things []string, atid string, start_
 						str := string(bytes)
 						tokens := strings.Split(str, ":")
 						lastBucket, _ = strconv.ParseInt(tokens[0], 10, 64)
-						lastAtid = tokens[1]
-						lastAid = tokens[2]
+						if len(tokens[1]) > 0 {
+							lastAtid = tokens[1]
+						}
+						if len(tokens[2]) > 0 {
+							lastAid = tokens[2]
+						}
 					} else {
 						bytes := x.([]byte)
 						str := string(bytes)
-						val, _ := strconv.ParseInt(str, 10, 64)
-						if lastBucket > qmax || lastBucket < qmin {
-							continue
-						}
-						if atid == "all" || lastAtid == atid {
-							sum += val
-						}
-					}
-				}
-
-				if lastAid != "" {
-					lastAidInt, _ := strconv.ParseInt(lastAid, 10, 64)
-
-					_, exists := aids[lastAidInt]
-					if !exists {
-						if lastAtid != "" {
-							aids[lastAidInt] = true
-							lastAtidInt, _ := strconv.ParseInt(lastAtid, 10, 64)
-							atids = append(atids, lastAtidInt)
+						val, err := strconv.ParseInt(str, 10, 64)
+						if err == nil {
+							if lastBucket <= qmax && lastBucket >= qmin {
+								if atid == "all" || lastAtid == atid {
+									sum += val
+									if lastAid != "" {
+										lastAidInt, err := strconv.ParseInt(lastAid, 10, 64)
+										if err == nil {
+											_, exists := aids[lastAidInt]
+											if !exists {
+												if lastAtid != "" {
+													aids[lastAidInt] = true
+													lastAtidInt, err := strconv.ParseInt(lastAtid, 10, 64)
+													if err == nil {
+														atids = append(atids, lastAtidInt)
+													}
+												}
+											}
+										}
+									}
+								}
+							}
 						}
 					}
 				}
