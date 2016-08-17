@@ -13,6 +13,14 @@ import "sort"
 import "strings"
 
 func (self RedisHZ) MultiQueryBucketsWithOffsets(uids, offsets, things []string, atid string, start_ts int64, end_ts int64) (*MUMTResponse, error) {
+
+	uniq_offsets := make(map[string]map[string]RedisHZRequest)
+	for _, o := range offsets {
+		oint, _ := strconv.ParseInt(o, 10, 64)
+		uniq_offsets[o] = self.requestsForRange(start_ts+oint, end_ts+oint)
+	}
+	fmt.Println(uniq_offsets)
+
 	requests := self.requestsForRange(start_ts, end_ts)
 
 	r := psdcontext.Ctx.RedisPool.Get()
