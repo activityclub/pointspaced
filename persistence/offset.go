@@ -11,16 +11,24 @@ import "github.com/garyburd/redigo/redis"
 import "fmt"
 import "sort"
 import "strings"
+import "errors"
 
 func (self RedisHZ) MultiQueryBucketsWithOffsets(uids, offsets, things []string, atid string, start_ts int64, end_ts int64) (*MUMTResponse, error) {
 
+	if len(uids) != len(offsets) {
+		return nil, errors.New("len(uids) != len(offsets)")
+	}
+
 	uniq_offsets := make(map[string]map[string]RedisHZRequest)
+	sorted_keys := make(map[string][]string)
 	for _, o := range offsets {
 		oint, _ := strconv.ParseInt(o, 10, 64)
 		uniq_offsets[o] = self.requestsForRange(start_ts+oint, end_ts+oint)
+		for idx, _ := range uniq_offsets[o] {
+			sorted_keys[o] = append(sorted_keys[o], idx)
+		}
+		sort.Strings(sorted_keys[o])
 	}
-
-	requests := self.requestsForRange(start_ts, end_ts)
 
 	r := psdcontext.Ctx.RedisPool.Get()
 	defer r.Close()
@@ -28,14 +36,7 @@ func (self RedisHZ) MultiQueryBucketsWithOffsets(uids, offsets, things []string,
 	minSent := map[string]map[string][]int64{}
 	maxSent := map[string]map[string][]int64{}
 
-	var reqkeys []string
-	for idx, _ := range requests {
-		reqkeys = append(reqkeys, idx)
-	}
-	sort.Strings(reqkeys)
-
-	for uidindex, uid := range uids {
-		fmt.Println(uidindex)
+	for ii, uid := range uids {
 
 		minSent[uid] = map[string][]int64{}
 		maxSent[uid] = map[string][]int64{}
@@ -47,8 +48,9 @@ func (self RedisHZ) MultiQueryBucketsWithOffsets(uids, offsets, things []string,
 
 			matchThing := thing2id(thing)
 
-			for _, rk := range reqkeys {
-				request := requests[rk]
+			o := offsets[ii]
+			for _, rk := range sorted_keys[o] {
+				request := uniq_offsets[o][rk]
 				key := fmt.Sprintf("hz:%s:%s:%s", matchThing, uid, request.TimeBucket)
 				r.Send("HGETALL", key)
 				qmin, _ := strconv.ParseInt(request.QueryMin(), 10, 64)
