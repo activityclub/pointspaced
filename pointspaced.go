@@ -9,6 +9,10 @@ import "pointspaced/worker"
 import "pointspaced/persistence"
 
 func main() {
+	fmt.Println("hi")
+}
+
+func main2() {
 	app := cli.NewApp()
 	app.Name = "pointspaced"
 	app.Usage = "yo dawg i heard you like points"
