@@ -1,4 +1,5 @@
 *.swp
+*.dat
 buckets
 .DS_Store
 pointspaced
