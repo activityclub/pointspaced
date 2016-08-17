@@ -17,9 +17,9 @@ func main() {
 	mm := persistence.NewMetricManagerHZ()
 	atid := "all"
 	things := strings.Split("points,steps", ",")
-	uids := strings.Split("1,2,3,327", ",")
+	uids := strings.Split("54,101,107,48", ",")
 	offsets := strings.Split("-28800,-28800,-28800,0", ",")
-	ts1 := int64(1471460799)
+	ts1 := int64(1471281987)
 	ts2 := int64(1471466799)
 
 	mumtresp, err := mm.MultiQueryBucketsWithOffsets(uids, offsets, things, atid, ts1, ts2)

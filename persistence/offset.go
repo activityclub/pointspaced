@@ -19,7 +19,6 @@ func (self RedisHZ) MultiQueryBucketsWithOffsets(uids, offsets, things []string,
 		oint, _ := strconv.ParseInt(o, 10, 64)
 		uniq_offsets[o] = self.requestsForRange(start_ts+oint, end_ts+oint)
 	}
-	fmt.Println(uniq_offsets)
 
 	requests := self.requestsForRange(start_ts, end_ts)
 
@@ -35,7 +34,8 @@ func (self RedisHZ) MultiQueryBucketsWithOffsets(uids, offsets, things []string,
 	}
 	sort.Strings(reqkeys)
 
-	for _, uid := range uids {
+	for uidindex, uid := range uids {
+		fmt.Println(uidindex)
 
 		minSent[uid] = map[string][]int64{}
 		maxSent[uid] = map[string][]int64{}
