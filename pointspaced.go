@@ -7,9 +7,23 @@ import "pointspaced/psdcontext"
 import "pointspaced/server"
 import "pointspaced/worker"
 import "pointspaced/persistence"
+import "strings"
 
 func main() {
+	psdcontext.PrepareContext("/Users/aa/dev/ac/go/src/pointspaced/conf/settings.toml")
+	psdcontext.Ctx.RedisPool = persistence.NewRedisPool(psdcontext.Ctx.Config.RedisConfig.Dsn)
+
 	fmt.Println("hi")
+	mm := persistence.NewMetricManagerHZ()
+	atid := "all"
+	things := strings.Split("points,steps", ",")
+	uids := strings.Split("1,2,3,327", ",")
+	offsets := strings.Split("-28800,-28800,-28800,0", ",")
+	ts1 := int64(1471460799)
+	ts2 := int64(1471466799)
+
+	mumtresp, err := mm.MultiQueryBucketsWithOffsets(uids, offsets, things, atid, ts1, ts2)
+	fmt.Println("hi2 ", mumtresp, err)
 }
 
 func main2() {
