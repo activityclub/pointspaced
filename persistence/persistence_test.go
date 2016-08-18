@@ -134,6 +134,7 @@ func BenchmarkHZ_ManyMultiUserRead(b *testing.B) {
 
 func testMetricRWInterface(t *testing.T, mm MetricRW) {
 	testValidRead(t, mm)
+	testOffsets(t, mm)
 	testMultiDayValidRead(t, mm)
 	testEvenLongerMultiDayValidRead(t, mm)
 	testReallyLongValidRead(t, mm)
@@ -244,6 +245,32 @@ func testNegativeQuery(t *testing.T, mm MetricRW) {
 	sum, _ := mm.QueryBucketsLua("1", "steps", "all", "all", 1458061005, 1458061010)
 	if sum != 80 {
 		t.Logf("Incorrect Sum.  Expected 80, Received %d", sum)
+		t.Fail()
+	}
+}
+
+func testOffsets(t *testing.T, mm MetricRW) {
+	clearRedisCompletely()
+
+	opts := make(map[string]string)
+	opts["thing"] = "points"
+	opts["uid"] = "1"
+	opts["atid"] = "10"
+	opts["aid"] = "1001"
+	opts["value"] = "100"
+	opts["ts1"] = "1471478499"
+	opts["ts2"] = "1471478499"
+	mm.WritePoint(opts)
+
+	uids := []string{"1"}
+	offsets := []string{"28800"}
+	things := []string{"points"}
+	ts1 := int64(1471392000) // 2016-08-17 00:00:00
+	ts2 := int64(1471478399) // 2016-08-17 23:59:59
+	res, _ := mm.MultiQueryBucketsWithOffsets(uids, offsets, things, "all", ts1, ts2)
+	if res.Data["1"]["points"] != int64(100) {
+		fmt.Println("XXX", res.Data)
+		t.Logf("Incorrect Points. Expected 100: ", res.Data["1"]["points"])
 		t.Fail()
 	}
 }

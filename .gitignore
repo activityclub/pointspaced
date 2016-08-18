@@ -1,5 +1,6 @@
 *.swp
 *.dat
+deploy.sh
 buckets
 .DS_Store
 pointspaced

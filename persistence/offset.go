@@ -1,13 +1,8 @@
 package persistence
 
-//import "time"
 import "strconv"
-
-//import "errors"
 import "pointspaced/psdcontext"
 import "github.com/garyburd/redigo/redis"
-
-//import "github.com/ugorji/go/codec"
 import "fmt"
 import "sort"
 import "strings"
