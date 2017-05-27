@@ -1,33 +1,90 @@
-## curl
-curl -d uid=327 -d gid=0 -d did=1 -d sid=9 -d tz=-13600 -d ts=1460663780 -d thing=cred -d value=123 "http://localhost:1155/v1/write"
+
+# Point Space Daemon (psd)
+
+(try to not think of adobe psd, different psd)
+
+PSD collects and aggregates data into a very neat data 
+structure made up of collections of hashes.  
+
+![](infographic.png)
+
+* Bucket Types
+
+Writes are expensive, reads are cheap. When we write, we write to ALL the bucket types, the same information, repeated over and over for a good reason. Bucket Types 1-3 are shown in image above but there are more for just the hour of march 15th from 13:00 to 13:59, and just the second from 13:59:01 to 13:59:02. i.e. we write the updates to the bucket for the whole year and for just 1 second and everything in between (min, hour, day, month)
+
+* Green
+
+The green oval is over the "1" in the string key. This represents the user_id.
+
+* Blue
+
+The blue oval is over the "0" in the string key. This is the activity_type id. (And zero is a special value for this meaning, ALL your activities.)
+
+* Orange
+
+The orange oval is over the "points" in the string key. This is the metric, either points, steps, or distance.
+
+* Gray
+
+The gray oval is over the "timebucket" in the string key.
+
+* Red Arrow
+
+Notice the red arrow shows the value inside that full key `"hz:1:0:points:20160315"` and it's another hash with
+`2016031516 => 10`. 
+
+Notice how 2016031516 has that 16 on the end and 20160315 is two characters shorter. So another key in that hash will be 2016031517. But both 2016031516 and 2016031517 are under 20160315.
+
+The 10 means 10 points were earned during that second. Replace points with steps and you get the idea of how we store both and then can query for either. And then to sum up these integers in all these different buckets, we use
+the Lua interpreter built into Redis starting from version 2.6.0 
+
+https://redis.io/commands/eval
+
+And so asking for the sum of all the steps for the last 23 days 4 hours and 3 seconds is easy.
+
+It lets us ask the question "how many points did this user get from 
+this point in time, to that point in time?"
+
+PSD does this in such a way that its almost as cheap to query a summary 
+from a specific second in a specific day 82 days ago, to now, filtered 
+by an activity type, and broken down in whatever granularities you like, 
+as it is, to just ask for what was logged for today alone.
+
+We use this for 30 day challenges, 24 hour challenges and every leaderboard 
+you see, including our new bracket system! We can tell what your leaderboard
+looked like at a certain point in time, and compare that to your leaderboard 
+now, or anyones elses. You can [download the app](http://activity.club) and see.
+
+## Running locally
+
+You will need nsq, redis, golang. There are three main parts to psd:
+
+1. Input via a queue of async jobs
+2. Input via sync http post
+3. Output via http gets or posts
+
+So you compile the go code, and run `./pointspaced worker` to start it reading jobs from nsq.
+And in another terminal you run `./pointspaced server` to run the http server.
+Make your own `conf/settings.toml` file from `conf/settings.toml.dist` example and that has ports
+and hosts for redis, nsq, http.
 
 ## building
 
 to start pointspaced, you gotta do
+
 nsqd -lookupd-tcp-address=127.0.0.1:4160 &
+
 nsqadmin -lookupd-http-address=127.0.0.1:4161 &
+
 nsqlookupd &
+
 ./pointspaced worker
+
 redis-server &
+
 then you should be able to do ruby scripts/enqueue.rb
 
-
-## todo
-
-* finish implementation details around main algo stuff
-* think about how api might work for gauges
-* think about how api might work for single users, multiple users, and aggregate of all data into 1 type of queries
-    * california vs new york
-    * people use fitbit vs people that use healthkit
-    * results for my list of followers
-    * etc etc
-
-
-* hashzilla
-  * concurrency benchmarks / test parallel
-  * test with random read keys
-  * test insert not linear
-  * lua experiment
+## details
 
 ```
 	// we will write 10, 11, 1 point
