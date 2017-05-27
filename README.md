@@ -19,6 +19,20 @@ you see, including our new bracket system! We can tell what your leaderboard
 looked like at a certain point in time, and compare that to your leaderboard 
 now, or anyones elses. You can [download the app](http://activity.club) and see.
 
+## Running locally
+
+You will need nsq, redis, golang. There are three main parts to psd:
+
+1. Input via a queue of async jobs
+2. Input via sync http post
+3. Output via http gets or posts
+
+So you compile the go code, and run `./pointspaced worker` to start it reading jobs from nsq.
+And in another terminal you run `./pointspaced server` to run the http server.
+Make your own `conf/settings.toml` file from `conf/settings.toml.dist` example and that has ports
+and hosts for redis, nsq, http.
+ 
+
 
 
 
