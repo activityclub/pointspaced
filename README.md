@@ -10,13 +10,28 @@ structure made up of collections of hashes.
 
 1. Bucket Types
 
-Writes are expensive, reads are cheap. When we write, we write to ALL the bucket types, the same information, repeated over and over for a good reason. Bucket Types 1-3 are shown in image above but there are more for just the hour of march 15th at 13:00 to 13:59, and just the second from 13:59:01 to 13:59:02. i.e. we write the updates to the bucket for the whole year and for just 1 second and everything in between (min, hour, day, month)
+Writes are expensive, reads are cheap. When we write, we write to ALL the bucket types, the same information, repeated over and over for a good reason. Bucket Types 1-3 are shown in image above but there are more for just the hour of march 15th from 13:00 to 13:59, and just the second from 13:59:01 to 13:59:02. i.e. we write the updates to the bucket for the whole year and for just 1 second and everything in between (min, hour, day, month)
 
 2. Green
+
+The green oval is over the "1" in the string key. This represents the user_id.
+
 3. Blue
+
+The blue oval is over the "0" in the string key. This is the activity_type id. (And zero is a special value for this meaning, ALL your activities.)
+
 4. Orange
+
+The orange oval is over the "points" in the string key. This is the metric, either points, steps, or distance.
+
 5. Gray
+
+The gray oval is over the "timebucket" in the string key.
+
 6. Red Arrow
+
+Notice the red arrow shows the value inside that full key `"hz:1:0:points:20160315"` and it's
+`2016031516 => 10`
 
 It lets us to ask the question "how many points did this user get from 
 this point in time, to that point in time?"
