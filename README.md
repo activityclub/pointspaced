@@ -1,3 +1,43 @@
+
+# Point Space Daemon (psd)
+
+(try to not think of adobe psd, different psd)
+
+PSD collections and aggregates data into a very neat data 
+structure made up of collections of hashes.  
+
+It lets us to ask the question "how many points did this user get from 
+this point in time, to that point in time?"
+
+PSD does this in such a way that its almost as cheap to query a summary 
+from a specific second in a specific day 82 days ago, to now, filtered 
+by an activity type, and broken down in whatever granularities you like, 
+as it is, to just ask for what was logged for today alone.
+
+We use this for 30 day challenges, 24 hour challenges and every leaderboard 
+you see, including our new bracket system! We can tell what your leaderboard
+looked like at a certain point in time, and compare that to your leaderboard 
+now, or anyones elses. You can [download the app](http://activity.club) and see.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ## curl
 curl -d uid=327 -d gid=0 -d did=1 -d sid=9 -d tz=-13600 -d ts=1460663780 -d thing=cred -d value=123 "http://localhost:1155/v1/write"
 
