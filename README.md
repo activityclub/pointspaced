@@ -31,9 +31,18 @@ The gray oval is over the "timebucket" in the string key.
 * Red Arrow
 
 Notice the red arrow shows the value inside that full key `"hz:1:0:points:20160315"` and it's
-`2016031516 => 10`. Notice how 2016031516 has that 16 on the end and 20160315 is two characters shorter. So another key in that hash will be 2016031517. But both 2016031516 and 2016031517 are under 20160315.
+`2016031516 => 10`. 
 
-It lets us to ask the question "how many points did this user get from 
+The 10 means 10 points were earned during that second. Replace points with steps and you get the idea of how we store both and then can query for either. And then to sum up these integers in all these different buckets, we use
+the Lua interpreter built into Redis starting from version 2.6.0 
+
+https://redis.io/commands/eval
+
+And so asking for the sum of all the steps for the last 23 days 4 hours and 3 seconds is easy.
+
+Notice how 2016031516 has that 16 on the end and 20160315 is two characters shorter. So another key in that hash will be 2016031517. But both 2016031516 and 2016031517 are under 20160315.
+
+It lets us ask the question "how many points did this user get from 
 this point in time, to that point in time?"
 
 PSD does this in such a way that its almost as cheap to query a summary 
@@ -59,38 +68,6 @@ And in another terminal you run `./pointspaced server` to run the http server.
 Make your own `conf/settings.toml` file from `conf/settings.toml.dist` example and that has ports
 and hosts for redis, nsq, http.
 
-## Let's give it some data
-
-The simpler way to input data is sync http post calls. This just removes the complexity of nsq and async
-and is great for this example, but in real production you made need async job processing.
-
-curl -d uid=327 -d gid=0 -d did=1 -d sid=9 -d tz=-13600 -d ts=1460663780 -d thing=cred -d value=123 "http://localhost:1155/v1/write"
-
-
- 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-## curl
-curl -d uid=327 -d gid=0 -d did=1 -d sid=9 -d tz=-13600 -d ts=1460663780 -d thing=cred -d value=123 "http://localhost:1155/v1/write"
-
 ## building
 
 to start pointspaced, you gotta do
@@ -101,23 +78,7 @@ nsqlookupd &
 redis-server &
 then you should be able to do ruby scripts/enqueue.rb
 
-
-## todo
-
-* finish implementation details around main algo stuff
-* think about how api might work for gauges
-* think about how api might work for single users, multiple users, and aggregate of all data into 1 type of queries
-    * california vs new york
-    * people use fitbit vs people that use healthkit
-    * results for my list of followers
-    * etc etc
-
-
-* hashzilla
-  * concurrency benchmarks / test parallel
-  * test with random read keys
-  * test insert not linear
-  * lua experiment
+## details
 
 ```
 	// we will write 10, 11, 1 point
