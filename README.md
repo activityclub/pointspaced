@@ -30,8 +30,10 @@ The gray oval is over the "timebucket" in the string key.
 
 * Red Arrow
 
-Notice the red arrow shows the value inside that full key `"hz:1:0:points:20160315"` and it's
+Notice the red arrow shows the value inside that full key `"hz:1:0:points:20160315"` and it's another hash with
 `2016031516 => 10`. 
+
+Notice how 2016031516 has that 16 on the end and 20160315 is two characters shorter. So another key in that hash will be 2016031517. But both 2016031516 and 2016031517 are under 20160315.
 
 The 10 means 10 points were earned during that second. Replace points with steps and you get the idea of how we store both and then can query for either. And then to sum up these integers in all these different buckets, we use
 the Lua interpreter built into Redis starting from version 2.6.0 
@@ -39,8 +41,6 @@ the Lua interpreter built into Redis starting from version 2.6.0
 https://redis.io/commands/eval
 
 And so asking for the sum of all the steps for the last 23 days 4 hours and 3 seconds is easy.
-
-Notice how 2016031516 has that 16 on the end and 20160315 is two characters shorter. So another key in that hash will be 2016031517. But both 2016031516 and 2016031517 are under 20160315.
 
 It lets us ask the question "how many points did this user get from 
 this point in time, to that point in time?"
