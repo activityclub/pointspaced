@@ -3,7 +3,7 @@
 
 (try to not think of adobe psd, different psd)
 
-PSD collections and aggregates data into a very neat data 
+PSD collects and aggregates data into a very neat data 
 structure made up of collections of hashes.  
 
 It lets us to ask the question "how many points did this user get from 
@@ -31,6 +31,15 @@ So you compile the go code, and run `./pointspaced worker` to start it reading j
 And in another terminal you run `./pointspaced server` to run the http server.
 Make your own `conf/settings.toml` file from `conf/settings.toml.dist` example and that has ports
 and hosts for redis, nsq, http.
+
+## Let's give it some data
+
+The simpler way to input data is sync http post calls. This just removes the complexity of nsq and async
+and is great for this example, but in real production you made need async job processing.
+
+curl -d uid=327 -d gid=0 -d did=1 -d sid=9 -d tz=-13600 -d ts=1460663780 -d thing=cred -d value=123 "http://localhost:1155/v1/write"
+
+
  
 
 
