@@ -6,6 +6,8 @@
 PSD collects and aggregates data into a very neat data 
 structure made up of collections of hashes.  
 
+![](infographic.png)
+
 It lets us to ask the question "how many points did this user get from 
 this point in time, to that point in time?"
 
