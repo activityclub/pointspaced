@@ -70,10 +70,12 @@ run `./pointspaced server`
 
 ```
 curl -X GET "http://127.0.0.1:1155/health/ping"
-{"pong":"OK"}
 
 curl -X POST -H "Content-Type: application/json" -d '{"thing":"steps","uid":1,"atid":2,"aid":3,"value":10,"ts1":1496539746,"ts2":1496539747}' "http://127.0.0.1:1155/v1/write"
+
+curl -X POST -d "things=steps" -d "ids=1" "http://127.0.0.1:1155/v1/mumt_query/all/1496539746/1496539747"
 ```
+`{"data":{"1":{"_atids":[2],"steps":10}}}`
 
 ## Running locally
 
