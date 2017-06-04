@@ -1,23 +1,23 @@
 package: pointspaced
 import: 
 - package: github.com/codegangsta/cli
-  version: 5db74198dee1cfe60cf06a611d03a420361baad6
+  version: d70f47eeca3afd795160003bc6e28b001d60c67c
   vcs: git
 - package: github.com/BurntSushi/toml
-  version: a4eecd407cf4129fc902ece859a0114e4cf1a7f4
+  version: b26d9c308763d68093482582cea63d69be07a0f0
   vcs: git
 - package: github.com/gin-gonic/gin
-  version: 00b10c30a00cdba00ba288154052b9e29ec4d0bf
+  version: d5b353c5d5a560322e6d96121c814115562501f7 
   vcs: git
 - package: github.com/bitly/go-nsq
-  version: 0b80d6f05e15ca1930e0c5e1d540ed627e299980 
+  version: 3c0361b0543aa19361e5bc6b55a3d71958cc8d10
   vcs: git
 - package: github.com/garyburd/redigo/redis 
-  version: 55d64223b60ff7c6a7f1c391f611038a88a86b01
+  version: 95d11dba2d44531bdb8022752b98912baafae03a
   vcs: git
 - package: github.com/mreiferson/go-snappystream
   version: 028eae7ab5c4c9e2d1cb4c4ca1e53259bbe7e504
   vcs: git
 - package: github.com/ugorji/go/codec
-  version: a396ed22fc049df733440d90efe17475e3929ccb
+  version: 708a42d246822952f38190a8d8c4e6b16a0e600c
   vcs: git
