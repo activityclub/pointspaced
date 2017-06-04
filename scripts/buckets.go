@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
+	"github.com/activityclub/pointspaced/persistence"
+	"github.com/activityclub/pointspaced/psdcontext"
 	"math/rand"
-	"pointspaced/persistence"
-	"pointspaced/psdcontext"
 	"time"
 )
 

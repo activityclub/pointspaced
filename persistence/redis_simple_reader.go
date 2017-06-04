@@ -2,8 +2,8 @@ package persistence
 
 import (
 	"fmt"
+	"github.com/activityclub/pointspaced/psdcontext"
 	"github.com/garyburd/redigo/redis"
-	"pointspaced/psdcontext"
 	"strconv"
 	"time"
 )

@@ -1,7 +1,7 @@
 package jobs
 
 import "fmt"
-import "pointspaced/persistence"
+import "github.com/activityclub/pointspaced/persistence"
 
 type MetricJob struct {
 	Thing string `json:"thing"`

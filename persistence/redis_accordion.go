@@ -4,7 +4,7 @@ import "time"
 import "sync"
 import "strconv"
 import "errors"
-import "pointspaced/psdcontext"
+import "github.com/activityclub/pointspaced/psdcontext"
 import "github.com/garyburd/redigo/redis"
 import "fmt"
 

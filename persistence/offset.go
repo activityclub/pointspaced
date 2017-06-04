@@ -1,7 +1,7 @@
 package persistence
 
 import "strconv"
-import "pointspaced/psdcontext"
+import "github.com/activityclub/pointspaced/psdcontext"
 import "github.com/garyburd/redigo/redis"
 import "fmt"
 import "sort"

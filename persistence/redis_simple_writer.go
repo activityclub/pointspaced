@@ -2,7 +2,7 @@ package persistence
 
 import (
 	"fmt"
-	"pointspaced/psdcontext"
+	"github.com/activityclub/pointspaced/psdcontext"
 	"time"
 )
 
