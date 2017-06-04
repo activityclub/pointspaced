@@ -64,6 +64,17 @@ With redis running, cd to `persistence` and run:
 ```
 This will run through all the tests in persistence_test.go
 
+## Curls
+
+run `./pointspaced server`
+
+```
+curl -X GET "http://127.0.0.1:1155/health/ping"
+{"pong":"OK"}
+
+curl -X POST -H "Content-Type: application/json" -d '{"thing":"step","uid":1,"atid":3,"aid":123",value:999,ts1:1496539746,ts2:1496539746}' "http://127.0.0.1:1155/v1/write"
+```
+
 ## Running locally
 
 You will need nsq, redis, golang. There are three main parts to psd:
