@@ -1,7 +1,7 @@
 package persistence
 
 import "os"
-import "pointspaced/psdcontext"
+import "github.com/activityclub/pointspaced/psdcontext"
 import "testing"
 import "time"
 import "fmt"

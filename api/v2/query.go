@@ -1,7 +1,7 @@
 package v2
 
 import "github.com/gin-gonic/gin"
-import "pointspaced/persistence"
+import "github.com/activityclub/pointspaced/persistence"
 import "strconv"
 import "strings"
 

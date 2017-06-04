@@ -1,8 +1,8 @@
 package router
 
 import "github.com/gin-gonic/gin"
-import "pointspaced/api/v1"
-import "pointspaced/api/v2"
+import "github.com/activityclub/pointspaced/api/v1"
+import "github.com/activityclub/pointspaced/api/v2"
 
 func ConfigureRoutes(r *gin.Engine) {
 	r.GET("/health/ping", v1.Ping)

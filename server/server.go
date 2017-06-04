@@ -2,9 +2,9 @@ package server
 
 import "fmt"
 import "github.com/gin-gonic/gin"
-import "pointspaced/persistence"
-import "pointspaced/psdcontext"
-import "pointspaced/router"
+import "github.com/activityclub/pointspaced/persistence"
+import "github.com/activityclub/pointspaced/psdcontext"
+import "github.com/activityclub/pointspaced/router"
 import "github.com/garyburd/redigo/redis"
 
 func Run() {

@@ -1,7 +1,7 @@
 package v1
 
 import "github.com/gin-gonic/gin"
-import "pointspaced/jobs"
+import "github.com/activityclub/pointspaced/jobs"
 
 func Write(c *gin.Context) {
 	var metric jobs.MetricJob

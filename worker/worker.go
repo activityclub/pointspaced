@@ -1,7 +1,7 @@
 package worker
 
-import "pointspaced/psdcontext"
-import "pointspaced/jobs"
+import "github.com/activityclub/pointspaced/psdcontext"
+import "github.com/activityclub/pointspaced/jobs"
 import "github.com/bitly/go-nsq"
 import "encoding/json"
 import "sync"

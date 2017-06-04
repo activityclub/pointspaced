@@ -55,6 +55,15 @@ you see, including our new bracket system! We can tell what your leaderboard
 looked like at a certain point in time, and compare that to your leaderboard 
 now, or anyones elses. You can [download the app](http://activity.club) and see.
 
+## Testing
+
+With redis running, cd to `persistence` and run:
+
+```
+~/src/github.com/activityclub/pointspaced/persistence $ go test
+```
+This will run through all the tests in persistence_test.go
+
 ## Running locally
 
 You will need nsq, redis, golang. There are three main parts to psd:

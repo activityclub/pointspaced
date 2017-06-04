@@ -3,10 +3,10 @@ package main
 import "os"
 import "github.com/codegangsta/cli"
 import "fmt"
-import "pointspaced/psdcontext"
-import "pointspaced/server"
-import "pointspaced/worker"
-import "pointspaced/persistence"
+import "github.com/activityclub/pointspaced/psdcontext"
+import "github.com/activityclub/pointspaced/server"
+import "github.com/activityclub/pointspaced/worker"
+import "github.com/activityclub/pointspaced/persistence"
 
 func main() {
 	app := cli.NewApp()
